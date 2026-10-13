@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Historial{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3"><h3 class="page-title">Historial de movimientos</h3>
+ <div class="btn-group"><a class="btn btn-outline-secondary {{ 'active' if not tipo }}" href="?">Todos</a>
+ <a class="btn btn-outline-success {{ 'active' if tipo=='entrada' }}" href="?tipo=entrada">Entradas</a>
+ <a class="btn btn-outline-danger {{ 'active' if tipo=='salida' }}" href="?tipo=salida">Salidas</a></div></div>
+<div class="table-responsive card shadow-sm"><table class="table mb-0"><thead><tr><th>Fecha</th><th>Producto</th><th>Tipo</th><th>Cantidad</th><th>Usuario</th><th>Observación</th></tr></thead><tbody>
+{% for m in movimientos %}<tr><td>{{ m.fecha.strftime('%d/%m/%Y %H:%M') }}</td><td>{{ m.producto.nombre }}</td>
+ <td><span class="badge bg-{{ 'success' if m.tipo=='entrada' else 'danger' }}">{{ m.tipo }}</span></td><td>{{ m.cantidad }}</td><td>{{ m.usuario.username if m.usuario else '—' }}</td><td>{{ m.observacion or '' }}</td></tr>
+{% else %}<tr><td colspan="6" class="text-center text-muted py-4">Sin movimientos.</td></tr>{% endfor %}
+</tbody></table></div>
+{% endblock %}

@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}Reportes{% endblock %}
+{% block content %}
+<h3 class="page-title mb-3">Reportes (CSV)</h3>
+<div class="list-group" style="max-width:480px">
+ <a class="list-group-item list-group-item-action" href="{{ url_for('reportes.productos') }}"><i class="bi bi-download me-2"></i>Descargar listado de productos</a>
+ <a class="list-group-item list-group-item-action" href="{{ url_for('reportes.movimientos') }}"><i class="bi bi-download me-2"></i>Descargar historial de movimientos</a>
+</div>
+{% endblock %}

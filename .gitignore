@@ -1,0 +1,8 @@
+# Entorno y cache
+venv/
+__pycache__/
+*.pyc
+
+# Base de datos y secretos locales
+instance/
+.env

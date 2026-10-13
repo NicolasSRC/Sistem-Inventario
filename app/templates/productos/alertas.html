@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}Alertas{% endblock %}
+{% block content %}
+<h3 class="page-title mb-3">Alertas de stock bajo</h3>
+<div class="card shadow-sm"><table class="table mb-0"><thead><tr><th>SKU</th><th>Producto</th><th>Cantidad</th><th>Mínimo</th></tr></thead><tbody>
+{% for p in productos %}<tr class="fila-alerta"><td>{{ p.sku or '—' }}</td><td>{{ p.nombre }}</td><td>{{ p.cantidad }}</td><td>{{ p.stock_minimo }}</td></tr>
+{% else %}<tr><td colspan="4" class="text-center text-muted py-4">Todo el inventario está por encima del mínimo</td></tr>{% endfor %}
+</tbody></table></div>
+{% endblock %}

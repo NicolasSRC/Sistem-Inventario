@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<h3 class="page-title mb-1">Dashboard</h3>
+<p class="page-sub mb-4">Resumen general del inventario</p>
+<div class="row g-3 mb-4">
+ {% for icon, color, val, label in [
+  ('bi-boxes','primary', total, 'Total de productos'),
+  ('bi-stack','success', unidades, 'Unidades en stock'),
+  ('bi-currency-dollar','info', '$' ~ '{:,.2f}'.format(valor), 'Valor del inventario'),
+  ('bi-exclamation-triangle','warning', alertas, 'Productos con stock bajo')] %}
+ <div class="col-sm-6 col-xl-3"><div class="card shadow-sm h-100"><div class="card-body kpi">
+  <div class="kpi-icon k-{{ color }}"><i class="bi {{ icon }}"></i></div>
+  <div><div class="kpi-value">{{ val }}</div><div class="kpi-label">{{ label }}</div></div>
+ </div></div></div>
+ {% endfor %}
+</div>
+<div class="card shadow-sm"><div class="card-header">Últimos movimientos</div>
+ <div class="table-responsive"><table class="table table-hover mb-0"><thead><tr><th>Fecha</th><th>Producto</th><th>Tipo</th><th>Cantidad</th></tr></thead><tbody>
+ {% for m in ultimos %}<tr><td>{{ m.fecha.strftime('%d/%m/%Y %H:%M') }}</td><td>{{ m.producto.nombre }}</td>
+  <td><span class="badge bg-{{ 'success' if m.tipo=='entrada' else 'danger' }}">{{ m.tipo|capitalize }}</span></td><td>{{ m.cantidad }}</td></tr>
+ {% else %}<tr><td colspan="4" class="text-center text-muted py-4">Sin movimientos.</td></tr>{% endfor %}
+ </tbody></table></div></div>
+{% endblock %}

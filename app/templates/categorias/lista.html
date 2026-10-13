@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Categorías{% endblock %}
+{% block content %}
+<h3 class="page-title mb-3">Categorías</h3>
+<form method="post" class="row g-2 mb-3"><div class="col-md-6"><input name="nombre" class="form-control" placeholder="Nueva categoría" maxlength="50" required></div><div class="col"><button class="btn btn-primary">Agregar</button></div></form>
+<div class="card shadow-sm"><table class="table align-middle mb-0"><thead><tr><th>Nombre</th><th>Productos</th><th></th></tr></thead><tbody>
+{% for c in categorias %}<tr><td>
+ <form method="post" action="{{ url_for('categorias.editar', id=c.id) }}" class="d-flex gap-2"><input name="nombre" value="{{ c.nombre }}" class="form-control form-control-sm" maxlength="50"><button class="btn btn-sm btn-outline-secondary">Guardar</button></form></td>
+ <td>{{ c.productos|length }}</td>
+ <td class="text-end"><form method="post" action="{{ url_for('categorias.eliminar', id=c.id) }}" data-confirm="¿Eliminar la categoría?"><button class="btn btn-sm btn-outline-danger">Eliminar</button></form></td></tr>
+{% else %}<tr><td colspan="3" class="text-center text-muted">Sin categorías.</td></tr>{% endfor %}
+</tbody></table></div>
+{% endblock %}

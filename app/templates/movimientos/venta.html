@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% block title %}Registrar venta{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+ <div>
+  <h3 class="page-title">Registrar venta</h3>
+  <p class="page-sub mb-0">Salida rápida de inventario por venta al cliente</p>
+ </div>
+ <a href="{{ url_for('movimientos.historial', tipo='salida') }}" class="btn btn-outline-secondary">
+  <i class="bi bi-clock-history me-1"></i>Ver ventas
+ </a>
+</div>
+
+<div class="row g-3">
+ <div class="col-lg-5">
+  <form method="post" class="form-card h-100">
+   <div class="form-card-body">
+    <section class="form-section">
+     <div class="form-section-title"><i class="bi bi-cart-check"></i>Datos de la venta</div>
+     <div class="row g-3">
+      <div class="col-12">
+       <label class="form-label">Producto <span class="text-danger">*</span></label>
+       <select name="producto_id" id="producto_id" class="form-select" required>
+        <option value="" data-precio="0">Seleccione un producto…</option>
+        {% for p in productos %}
+        <option value="{{ p.id }}" data-precio="{{ '%.2f'|format(p.precio or 0) }}" data-stock="{{ p.cantidad }}">
+         {{ p.nombre }} · ${{ '{:,.2f}'.format(p.precio or 0) }} (stock: {{ p.cantidad }})
+        </option>
+        {% endfor %}
+       </select>
+      </div>
+      <div class="col-sm-6">
+       <label class="form-label">Cantidad <span class="text-danger">*</span></label>
+       <div class="input-group">
+        <input type="number" min="1" name="cantidad" id="cantidad" class="form-control" value="1" required>
+        <span class="input-group-text">und</span>
+       </div>
+      </div>
+      <div class="col-sm-6">
+       <label class="form-label">Total estimado</label>
+       <div class="total-box" id="total" aria-live="polite">$0,00</div>
+      </div>
+      <div class="col-12">
+       <label class="form-label">Observación</label>
+       <textarea name="observacion" class="form-control" rows="2" placeholder="Cliente, número de factura…"></textarea>
+      </div>
+     </div>
+    </section>
+    <div class="form-actions">
+     <button class="btn btn-primary px-4"><i class="bi bi-cart-check me-1"></i>Registrar venta</button>
+     <a class="btn btn-link text-secondary" href="{{ url_for('dashboard.index') }}">Volver al dashboard</a>
+    </div>
+    <div class="form-note mt-3">
+     <i class="bi bi-info-circle"></i>
+     <span>La venta descuenta stock y consume los lotes con vencimiento más próximo (FEFO).</span>
+    </div>
+   </div>
+  </form>
+ </div>
+
+ <div class="col-lg-7">
+  <div class="card shadow-sm h-100">
+   <div class="card-header d-flex justify-content-between align-items-center">
+    <span>Venta rápida · un clic</span>
+    <span class="badge bg-primary">{{ productos|length }} disponibles</span>
+   </div>
+   <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+     <thead><tr><th>Producto</th><th>Precio</th><th>Stock</th><th class="text-end">Acción</th></tr></thead>
+     <tbody>
+      {% for p in productos %}
+      <tr>
+       <td>
+        <div class="fw-semibold">{{ p.nombre }}</div>
+        {% if p.sku %}<small class="text-muted">{{ p.sku }}</small>{% endif %}
+       </td>
+       <td class="text-nowrap">${{ '{:,.2f}'.format(p.precio or 0) }}</td>
+       <td><span class="badge bg-{{ 'success' if not p.bajo_stock else 'warning' }} {{ 'text-dark' if p.bajo_stock }}">{{ p.cantidad }}</span></td>
+       <td class="text-end">
+        <form method="post" class="d-inline">
+         <input type="hidden" name="producto_id" value="{{ p.id }}">
+         <input type="hidden" name="cantidad" value="1">
+         <button class="btn btn-sm btn-outline-primary" title="Vender 1 unidad">
+          <i class="bi bi-plus-lg me-1"></i>Vender 1
+         </button>
+        </form>
+       </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="4" class="text-center text-muted py-4">No hay productos con stock disponible.</td></tr>
+      {% endfor %}
+     </tbody>
+    </table>
+   </div>
+  </div>
+ </div>
+</div>
+
+<script>
+(function () {
+  const producto = document.getElementById('producto_id');
+  const cantidad = document.getElementById('cantidad');
+  const total = document.getElementById('total');
+  const formato = new Intl.NumberFormat('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+  function calcular() {
+    if (!producto || !cantidad || !total) return;
+    const precio = parseFloat(producto.selectedOptions[0]?.dataset.precio || 0);
+    const unidades = parseInt(cantidad.value || 0, 10);
+    total.textContent = '$' + formato.format(precio * (isNaN(unidades) ? 0 : unidades));
+  }
+
+  if (producto) producto.addEventListener('change', calcular);
+  if (cantidad) cantidad.addEventListener('input', calcular);
+  calcular();
+})();
+</script>
+{% endblock %}

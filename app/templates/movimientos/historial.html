@@ -2,12 +2,31 @@
 {% block title %}Historial{% endblock %}
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-3"><h3 class="page-title">Historial de movimientos</h3>
- <div class="btn-group"><a class="btn btn-outline-secondary {{ 'active' if not tipo }}" href="?">Todos</a>
- <a class="btn btn-outline-success {{ 'active' if tipo=='entrada' }}" href="?tipo=entrada">Entradas</a>
- <a class="btn btn-outline-danger {{ 'active' if tipo=='salida' }}" href="?tipo=salida">Salidas</a></div></div>
-<div class="table-responsive card shadow-sm"><table class="table mb-0"><thead><tr><th>Fecha</th><th>Producto</th><th>Tipo</th><th>Cantidad</th><th>Usuario</th><th>Observación</th></tr></thead><tbody>
-{% for m in movimientos %}<tr><td>{{ m.fecha.strftime('%d/%m/%Y %H:%M') }}</td><td>{{ m.producto.nombre }}</td>
- <td><span class="badge bg-{{ 'success' if m.tipo=='entrada' else 'danger' }}">{{ m.tipo }}</span></td><td>{{ m.cantidad }}</td><td>{{ m.usuario.username if m.usuario else '—' }}</td><td>{{ m.observacion or '' }}</td></tr>
-{% else %}<tr><td colspan="6" class="text-center text-muted py-4">Sin movimientos.</td></tr>{% endfor %}
-</tbody></table></div>
+ <div class="btn-group flex-wrap"><a class="btn btn-sm btn-outline-secondary {{ 'active' if not tipo }}" href="?">Todos</a>
+ <a class="btn btn-sm btn-outline-success {{ 'active' if tipo=='entrada' }}" href="?tipo=entrada">Entradas</a>
+ <a class="btn btn-sm btn-outline-danger {{ 'active' if tipo=='salida' }}" href="?tipo=salida">Salidas</a>
+ <a class="btn btn-sm btn-outline-warning {{ 'active' if tipo=='ajuste' }}" href="?tipo=ajuste">Ajustes</a>
+ <a class="btn btn-sm btn-outline-dark {{ 'active' if tipo=='merma' }}" href="?tipo=merma">Mermas</a></div></div>
+<div class="table-responsive card shadow-sm"><table class="table table-sm align-middle mb-0">
+ <thead><tr><th>Fecha</th><th>Producto</th><th>Tipo / motivo</th><th>Efecto</th><th>Lote</th><th>Vence</th><th>Costo</th><th>Impacto</th><th>Usuario</th><th>Observación</th></tr></thead>
+ <tbody>
+ {% for m in movimientos %}
+ {% set color = {'entrada':'success','salida':'danger','ajuste':'warning','merma':'dark'}.get(m.tipo, 'secondary') %}
+ <tr>
+  <td class="text-nowrap">{{ m.fecha.strftime('%d/%m/%Y %H:%M') }}</td>
+  <td>{{ m.producto.nombre }}</td>
+  <td><span class="badge bg-{{ color }} {{ 'text-dark' if m.tipo=='ajuste' }}">{{ m.tipo }}</span>
+   <div class="small text-muted">{{ m.motivo or '' }}</div></td>
+  <td class="text-nowrap fw-semibold {{ 'text-success' if m.efecto > 0 else 'text-danger' }}">
+   {{ '+' if m.efecto > 0 else '' }}{{ m.efecto }}</td>
+  <td>{{ m.lote.codigo if m.lote else '—' }}</td>
+  <td class="text-nowrap">{{ m.lote.fecha_vencimiento.strftime('%d/%m/%Y') if m.lote and m.lote.fecha_vencimiento else '—' }}</td>
+  <td class="text-nowrap">${{ '{:,.2f}'.format(m.costo_unitario or 0) }}</td>
+  <td class="text-nowrap">${{ '{:,.2f}'.format(m.impacto or 0) }}</td>
+  <td>{{ m.usuario.username if m.usuario else '—' }}</td>
+  <td>{{ m.observacion or '' }}</td>
+ </tr>
+ {% else %}<tr><td colspan="10" class="text-center text-muted py-4">Sin movimientos.</td></tr>{% endfor %}
+ </tbody>
+</table></div>
 {% endblock %}

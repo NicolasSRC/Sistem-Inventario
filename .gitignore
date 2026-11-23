@@ -2,7 +2,12 @@
 venv/
 __pycache__/
 *.pyc
+.pytest_cache/
 
-# Base de datos y secretos locales
+# Base de datos, respaldos y secretos locales
 instance/
+backups/
 .env
+
+# Documentos de referencia solo locales
+FASES.md

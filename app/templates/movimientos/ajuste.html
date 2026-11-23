@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% block title %}Registrar merma o ajuste{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-4">
+ <div>
+  <h3 class="page-title">Registrar merma o ajuste</h3>
+  <p class="page-sub mb-0">Pérdidas, daños, vencimientos y diferencias de conteo</p>
+ </div>
+ <a href="{{ url_for('movimientos.registrar') }}" class="btn btn-outline-secondary">
+  <i class="bi bi-arrow-left-right me-1"></i>Entrada / salida
+ </a>
+</div>
+
+<form method="post" class="form-card">
+ <div class="form-card-body">
+  <section class="form-section">
+   <div class="form-section-title"><i class="bi bi-box-seam"></i>Producto y operación</div>
+   <div class="row g-3">
+    <div class="col-md-6">
+     <label class="form-label">Producto <span class="text-danger">*</span></label>
+     <select name="producto_id" class="form-select" required>
+      <option value="">Seleccione un producto…</option>
+      {% for p in productos %}
+      <option value="{{ p.id }}">{{ p.nombre }} (stock: {{ p.cantidad }})</option>
+      {% endfor %}
+     </select>
+    </div>
+    <div class="col-md-3">
+     <label class="form-label">Operación <span class="text-danger">*</span></label>
+     <select name="tipo" id="tipo" class="form-select">
+      <option value="merma">Merma</option>
+      <option value="ajuste">Ajuste de inventario</option>
+     </select>
+     <div class="form-text">La merma siempre descuenta stock.</div>
+    </div>
+    <div class="col-md-3" id="campo-direccion">
+     <label class="form-label">Dirección del ajuste</label>
+     <select name="direccion" class="form-select">
+      <option value="disminuir">Disminuir stock</option>
+      <option value="aumentar">Aumentar stock</option>
+     </select>
+    </div>
+   </div>
+  </section>
+
+  <section class="form-section">
+   <div class="form-section-title"><i class="bi bi-clipboard-minus"></i>Detalle del registro</div>
+   <div class="row g-3">
+    <div class="col-md-6">
+     <label class="form-label">Motivo <span class="text-danger">*</span></label>
+     <select name="motivo" id="motivo" class="form-select" required>
+      <option value="vencimiento" data-tipo="merma">Vencimiento</option>
+      <option value="dano" data-tipo="merma">Daño</option>
+      <option value="robo" data-tipo="merma">Robo o pérdida</option>
+      <option value="devolucion" data-tipo="merma">Devolución</option>
+      <option value="diferencia_conteo" data-tipo="ajuste">Diferencia de conteo</option>
+      <option value="otro" data-tipo="ambos">Otro</option>
+     </select>
+    </div>
+    <div class="col-md-3">
+     <label class="form-label" id="etiqueta-cantidad">Cantidad a descontar <span class="text-danger">*</span></label>
+     <div class="input-group">
+      <input type="number" min="1" name="cantidad" class="form-control" required>
+      <span class="input-group-text">und</span>
+     </div>
+    </div>
+    <div class="col-md-3">
+     <label class="form-label">Impacto</label>
+     <div class="form-control bg-light small text-muted">Se calcula con el costo del producto o del lote consumido.</div>
+    </div>
+    <div class="col-12">
+     <label class="form-label">Observación</label>
+     <textarea name="observacion" class="form-control" rows="2" placeholder="Detalle del conteo, producto dañado, lote vencido…"></textarea>
+    </div>
+   </div>
+   <div class="form-note mt-3">
+    <i class="bi bi-info-circle"></i>
+    <span>Las mermas y los ajustes negativos consumen primero los lotes con vencimiento más próximo (FEFO).</span>
+   </div>
+  </section>
+
+  <div class="form-actions">
+   <button class="btn btn-primary px-4"><i class="bi bi-check2 me-1"></i>Registrar</button>
+   <a class="btn btn-link text-secondary" href="{{ url_for('movimientos.historial') }}">Ver historial</a>
+  </div>
+ </div>
+</form>
+
+<script>
+(function () {
+  const tipo = document.getElementById('tipo');
+  const direccion = document.getElementById('campo-direccion');
+  const motivo = document.getElementById('motivo');
+  const etiqueta = document.getElementById('etiqueta-cantidad');
+
+  function ajustar() {
+    const esMerma = tipo.value === 'merma';
+    if (direccion) direccion.style.display = esMerma ? 'none' : '';
+    if (etiqueta) etiqueta.innerHTML = esMerma
+      ? 'Cantidad a descontar <span class="text-danger">*</span>'
+      : 'Cantidad <span class="text-danger">*</span>';
+    for (const opcion of motivo.options) {
+      const aplica = opcion.dataset.tipo === 'ambos' || opcion.dataset.tipo === tipo.value;
+      opcion.hidden = !aplica;
+      opcion.disabled = !aplica;
+    }
+    if (motivo.selectedOptions[0] && motivo.selectedOptions[0].disabled) {
+      motivo.value = esMerma ? 'vencimiento' : 'diferencia_conteo';
+    }
+  }
+
+  if (tipo) {
+    tipo.addEventListener('change', ajustar);
+    ajustar();
+  }
+})();
+</script>
+{% endblock %}

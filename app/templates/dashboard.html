@@ -1,8 +1,22 @@
 {% extends "base.html" %}
 {% block title %}Dashboard{% endblock %}
 {% block content %}
-<h3 class="page-title mb-1">Dashboard</h3>
-<p class="page-sub mb-4">Resumen general del inventario</p>
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+ <div>
+  <h3 class="page-title">Dashboard</h3>
+  <p class="page-sub mb-0">Resumen general del inventario</p>
+ </div>
+ <div class="d-flex flex-wrap align-items-center gap-2">
+  <div class="btn-group" role="group" aria-label="Período del dashboard">
+   <a class="btn btn-sm btn-{{ 'primary' if periodo == 7 else 'outline-secondary' }}" href="{{ url_for('dashboard.index', periodo=7) }}">7 días</a>
+   <a class="btn btn-sm btn-{{ 'primary' if periodo == 30 else 'outline-secondary' }}" href="{{ url_for('dashboard.index', periodo=30) }}">30 días</a>
+  </div>
+  <a href="{{ url_for('movimientos.venta') }}" class="btn btn-sm btn-primary">
+   <i class="bi bi-cart-check me-1"></i>Registrar venta
+  </a>
+ </div>
+</div>
+
 <div class="row g-3 mb-4">
  {% for icon, color, val, label in [
   ('bi-boxes','primary', total, 'Total de productos'),
@@ -15,10 +29,305 @@
  </div></div></div>
  {% endfor %}
 </div>
+
+<div class="card shadow-sm mb-3"><div class="card-header">Actividad de hoy</div>
+ <div class="card-body row g-3">
+  <div class="col-md-4"><div class="d-flex align-items-center gap-3">
+   <div class="kpi-icon k-primary"><i class="bi bi-cart-check"></i></div>
+   <div><div class="kpi-value">{{ ventas_hoy }}</div><div class="kpi-label">Unidades vendidas hoy</div></div>
+  </div></div>
+  <div class="col-md-4"><div class="d-flex align-items-center gap-3">
+   <div class="kpi-icon k-success"><i class="bi bi-cash-coin"></i></div>
+   <div><div class="kpi-value">${{ '{:,.2f}'.format(ingresos_hoy) }}</div><div class="kpi-label">Ingresos estimados hoy</div></div>
+  </div></div>
+  <div class="col-md-4"><div class="d-flex align-items-center gap-3">
+   <div class="kpi-icon k-info"><i class="bi bi-activity"></i></div>
+   <div><div class="kpi-value">{{ movimientos_hoy }}</div><div class="kpi-label">Movimientos registrados hoy</div></div>
+  </div></div>
+ </div>
+</div>
+
+{% if current_user.es_admin %}
+<div class="row g-3 mb-4">
+ <div class="col-md-4"><div class="card shadow-sm h-100"><div class="card-body d-flex align-items-center gap-3">
+  <div class="kpi-icon k-warning"><i class="bi bi-calendar-event"></i></div>
+  <div><div class="kpi-value">{{ lotes_por_vencer }}</div><div class="kpi-label">Lotes por vencer</div></div>
+  <a href="{{ url_for('lotes.lista', estado='por_vencer') }}" class="btn btn-sm btn-outline-warning ms-auto">Ver</a>
+ </div></div></div>
+ <div class="col-md-4"><div class="card shadow-sm h-100"><div class="card-body d-flex align-items-center gap-3">
+  <div class="kpi-icon k-danger"><i class="bi bi-calendar-x"></i></div>
+  <div><div class="kpi-value">{{ lotes_vencidos }}</div><div class="kpi-label">Lotes vencidos con stock</div></div>
+  <a href="{{ url_for('lotes.lista', estado='vencido') }}" class="btn btn-sm btn-outline-danger ms-auto">Ver</a>
+ </div></div></div>
+ <div class="col-md-4"><div class="card shadow-sm h-100"><div class="card-body d-flex align-items-center gap-3">
+  <div class="kpi-icon k-dark"><i class="bi bi-clipboard-minus"></i></div>
+  <div><div class="kpi-value">{{ mermas_mes }}</div><div class="kpi-label">Mermas del mes · ${{ '{:,.2f}'.format(impacto_mermas_mes) }}</div></div>
+  <a href="{{ url_for('movimientos.historial', tipo='merma') }}" class="btn btn-sm btn-outline-dark ms-auto">Ver</a>
+ </div></div></div>
+</div>
+{% endif %}
+
+<div class="row g-3 mb-4">
+ <div class="col-xl-8">
+  <div class="card shadow-sm h-100">
+   <div class="card-header">Ventas de los últimos {{ periodo }} días</div>
+   <div class="card-body">
+    <div class="chart-box"><canvas id="chartVentas" aria-label="Ventas por día" role="img"></canvas></div>
+   </div>
+  </div>
+ </div>
+ <div class="col-xl-4">
+  <div class="card shadow-sm h-100">
+   <div class="card-header">Productos más vendidos</div>
+   <div class="card-body">
+    {% if top_productos %}
+    <div class="chart-box"><canvas id="chartTop" aria-label="Productos más vendidos" role="img"></canvas></div>
+    {% else %}
+    <p class="text-muted text-center py-5 mb-0">Sin ventas en los últimos {{ periodo }} días.</p>
+    {% endif %}
+   </div>
+  </div>
+ </div>
+</div>
+
+<div class="row g-3 mb-4">
+ <div class="col-lg-{{ '6' if current_user.es_admin else '12' }}">
+  <div class="card shadow-sm h-100">
+   <div class="card-header">Valor del inventario por categoría</div>
+   <div class="card-body">
+    {% if categorias_labels %}
+    <div class="chart-box"><canvas id="chartCategorias" aria-label="Valor por categoría" role="img"></canvas></div>
+    {% else %}
+    <p class="text-muted text-center py-5 mb-0">No hay inventario con stock para mostrar.</p>
+    {% endif %}
+   </div>
+  </div>
+ </div>
+ {% if current_user.es_admin %}
+ <div class="col-lg-6">
+  <div class="card shadow-sm h-100">
+   <div class="card-header">Estado de los lotes con stock</div>
+   <div class="card-body">
+    {% if lotes_estado_valores|sum %}
+    <div class="chart-box"><canvas id="chartLotes" aria-label="Estado de los lotes" role="img"></canvas></div>
+    {% else %}
+    <p class="text-muted text-center py-5 mb-0">No hay lotes con stock registrados.</p>
+    {% endif %}
+   </div>
+  </div>
+ </div>
+ {% endif %}
+</div>
+
+{% if top_productos %}
+<div class="card shadow-sm mb-4">
+ <div class="card-header">Detalle de los productos más vendidos</div>
+ <div class="table-responsive"><table class="table table-sm align-middle mb-0">
+  <thead><tr><th>Producto</th><th class="text-end">Unidades</th><th class="text-end">Ingresos estimados</th></tr></thead>
+  <tbody>
+   {% for p in top_productos %}
+   <tr><td>{{ p.nombre }}</td><td class="text-end">{{ p.unidades }}</td>
+    <td class="text-end">${{ '{:,.2f}'.format(p.ingresos) }}</td></tr>
+   {% endfor %}
+  </tbody>
+ </table></div>
+</div>
+{% endif %}
+
+{% if proximos_lotes %}
+<div class="card shadow-sm mb-4"><div class="card-header d-flex justify-content-between align-items-center">
+ <span>Próximos vencimientos</span><a href="{{ url_for('lotes.lista', estado='por_vencer') }}" class="small">Ver todos</a></div>
+ <div class="table-responsive"><table class="table table-sm mb-0"><thead><tr><th>Producto</th><th>Lote</th><th>Vence</th><th>Días</th><th>Cantidad</th></tr></thead><tbody>
+ {% for l in proximos_lotes %}<tr><td>{{ l.producto.nombre }}</td><td>{{ l.codigo or '—' }}</td>
+  <td>{{ l.fecha_vencimiento.strftime('%d/%m/%Y') }}</td><td>{{ l.dias_para_vencer }}</td><td>{{ l.cantidad_actual }}</td></tr>{% endfor %}
+ </tbody></table></div></div>
+{% endif %}
+
 <div class="card shadow-sm"><div class="card-header">Últimos movimientos</div>
  <div class="table-responsive"><table class="table table-hover mb-0"><thead><tr><th>Fecha</th><th>Producto</th><th>Tipo</th><th>Cantidad</th></tr></thead><tbody>
- {% for m in ultimos %}<tr><td>{{ m.fecha.strftime('%d/%m/%Y %H:%M') }}</td><td>{{ m.producto.nombre }}</td>
-  <td><span class="badge bg-{{ 'success' if m.tipo=='entrada' else 'danger' }}">{{ m.tipo|capitalize }}</span></td><td>{{ m.cantidad }}</td></tr>
+ {% for m in ultimos %}
+ {% set colores = {'entrada':'success','salida':'danger','ajuste':'warning','merma':'dark'} %}
+ <tr><td>{{ m.fecha.strftime('%d/%m/%Y %H:%M') }}</td><td>{{ m.producto.nombre }}</td>
+  <td><span class="badge bg-{{ colores.get(m.tipo, 'secondary') }} {{ 'text-dark' if m.tipo=='ajuste' }}">{{ m.tipo|capitalize }}</span></td><td>{{ m.cantidad }}</td></tr>
  {% else %}<tr><td colspan="4" class="text-center text-muted py-4">Sin movimientos.</td></tr>{% endfor %}
  </tbody></table></div></div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+(function () {
+  if (typeof Chart === 'undefined') return;
+
+  const paleta = ['#0f766e', '#0d9488', '#0891b2', '#d97706', '#dc2626', '#7c3aed', '#db2777', '#475569'];
+  const dinero = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 });
+  const numero = new Intl.NumberFormat('es-CO');
+
+  Chart.defaults.font.family = 'system-ui,-apple-system,"Segoe UI",Roboto,sans-serif';
+  Chart.defaults.color = '#374151';
+
+  const ventas = {{ ventas_labels|tojson }};
+  const unidades = {{ ventas_unidades|tojson }};
+  const ingresos = {{ ventas_ingresos|tojson }};
+
+  const canvasVentas = document.getElementById('chartVentas');
+  if (canvasVentas) {
+    new Chart(canvasVentas, {
+      type: 'bar',
+      data: {
+        labels: ventas,
+        datasets: [
+          {
+            type: 'bar',
+            label: 'Unidades vendidas',
+            data: unidades,
+            backgroundColor: 'rgba(15, 118, 110, 0.75)',
+            hoverBackgroundColor: '#0f766e',
+            borderRadius: 6,
+            yAxisID: 'y'
+          },
+          {
+            type: 'line',
+            label: 'Ingresos estimados',
+            data: ingresos,
+            borderColor: '#16a34a',
+            backgroundColor: 'rgba(22, 163, 74, 0.12)',
+            fill: true,
+            tension: 0.35,
+            pointRadius: 3,
+            pointBackgroundColor: '#16a34a',
+            yAxisID: 'y1'
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: { position: 'bottom' },
+          tooltip: {
+            callbacks: {
+              label: function (ctx) {
+                if (ctx.dataset.yAxisID === 'y1') {
+                  return ctx.dataset.label + ': ' + dinero.format(ctx.parsed.y || 0);
+                }
+                return ctx.dataset.label + ': ' + numero.format(ctx.parsed.y || 0);
+              }
+            }
+          }
+        },
+        scales: {
+          x: { grid: { display: false } },
+          y: {
+            beginAtZero: true,
+            title: { display: true, text: 'Unidades' },
+            ticks: { precision: 0 }
+          },
+          y1: {
+            beginAtZero: true,
+            position: 'right',
+            title: { display: true, text: 'Ingresos' },
+            grid: { drawOnChartArea: false },
+            ticks: { callback: function (valor) { return dinero.format(valor); } }
+          }
+        }
+      }
+    });
+  }
+
+  const canvasTop = document.getElementById('chartTop');
+  if (canvasTop) {
+    new Chart(canvasTop, {
+      type: 'bar',
+      data: {
+        labels: {{ top_productos|map(attribute='nombre')|list|tojson }},
+        datasets: [{
+          label: 'Unidades vendidas',
+          data: {{ top_productos|map(attribute='unidades')|list|tojson }},
+          backgroundColor: paleta,
+          borderRadius: 6
+        }]
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: function (ctx) { return numero.format(ctx.parsed.x || 0) + ' unidades'; }
+            }
+          }
+        },
+        scales: {
+          x: { beginAtZero: true, ticks: { precision: 0 } },
+          y: { grid: { display: false } }
+        }
+      }
+    });
+  }
+
+  const canvasCategorias = document.getElementById('chartCategorias');
+  if (canvasCategorias) {
+    new Chart(canvasCategorias, {
+      type: 'doughnut',
+      data: {
+        labels: {{ categorias_labels|tojson }},
+        datasets: [{
+          data: {{ categorias_valores|tojson }},
+          backgroundColor: paleta,
+          borderColor: '#ffffff',
+          borderWidth: 2
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '58%',
+        plugins: {
+          legend: { position: 'bottom' },
+          tooltip: {
+            callbacks: {
+              label: function (ctx) {
+                return ctx.label + ': ' + dinero.format(ctx.parsed || 0);
+              }
+            }
+          }
+        }
+      }
+    });
+  }
+
+  const canvasLotes = document.getElementById('chartLotes');
+  if (canvasLotes) {
+    new Chart(canvasLotes, {
+      type: 'doughnut',
+      data: {
+        labels: {{ lotes_estado_labels|tojson }},
+        datasets: [{
+          data: {{ lotes_estado_valores|tojson }},
+          backgroundColor: ['#dc2626', '#d97706', '#16a34a', '#94a3b8'],
+          borderColor: '#ffffff',
+          borderWidth: 2
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '58%',
+        plugins: {
+          legend: { position: 'bottom' },
+          tooltip: {
+            callbacks: {
+              label: function (ctx) { return ctx.label + ': ' + numero.format(ctx.parsed || 0) + ' lotes'; }
+            }
+          }
+        }
+      }
+    });
+  }
+})();
+</script>
 {% endblock %}

@@ -1,13 +1,127 @@
 {% extends "base.html" %}
 {% block title %}Registrar movimiento{% endblock %}
 {% block content %}
-<h3 class="page-title mb-3">Registrar movimiento de stock</h3>
-<form method="post" class="card shadow-sm card-body row g-3 mx-0">
- <div class="col-md-6"><label class="form-label">Producto *</label><select name="producto_id" class="form-select" required><option value="">Seleccione…</option>
-  {% for p in productos %}<option value="{{ p.id }}">{{ p.nombre }} (stock: {{ p.cantidad }})</option>{% endfor %}</select></div>
- <div class="col-md-3"><label class="form-label">Tipo *</label><select name="tipo" class="form-select"><option value="entrada">Entrada</option><option value="salida">Salida</option></select></div>
- <div class="col-md-3"><label class="form-label">Cantidad *</label><input type="number" min="1" name="cantidad" class="form-control" required></div>
- <div class="col-12"><label class="form-label">Observación</label><textarea name="observacion" class="form-control" rows="2"></textarea></div>
- <div class="col-12"><button class="btn btn-primary">Registrar</button> <a class="btn btn-link" href="{{ url_for('movimientos.historial') }}">Ver historial</a></div>
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-4">
+ <div>
+  <h3 class="page-title">Registrar movimiento de stock</h3>
+  <p class="page-sub mb-0">Entradas y salidas de inventario con trazabilidad completa</p>
+ </div>
+ <a href="{{ url_for('movimientos.ajuste') }}" class="btn btn-outline-warning">
+  <i class="bi bi-clipboard-minus me-1"></i>Merma / ajuste
+ </a>
+</div>
+
+<form method="post" class="form-card">
+ <div class="form-card-body">
+  <section class="form-section">
+   <div class="form-section-title"><i class="bi bi-arrow-left-right"></i>Producto y movimiento</div>
+   <div class="row g-3">
+    <div class="col-md-6">
+     <label class="form-label">Producto <span class="text-danger">*</span></label>
+     <select name="producto_id" id="producto_id" class="form-select" required>
+      <option value="">Seleccione un producto…</option>
+      {% for p in productos %}
+      <option value="{{ p.id }}" data-costo="{{ '%.2f'|format(p.precio_compra or 0) }}" data-proveedor="{{ p.proveedor_id or '' }}">
+       {{ p.nombre }} (stock: {{ p.cantidad }})
+      </option>
+      {% endfor %}
+     </select>
+    </div>
+    <div class="col-md-3">
+     <label class="form-label">Tipo <span class="text-danger">*</span></label>
+     <select name="tipo" id="tipo" class="form-select">
+      <option value="entrada">Entrada</option>
+      <option value="salida">Salida</option>
+     </select>
+    </div>
+    <div class="col-md-3">
+     <label class="form-label">Cantidad <span class="text-danger">*</span></label>
+     <div class="input-group">
+      <input type="number" min="1" name="cantidad" class="form-control" required>
+      <span class="input-group-text">und</span>
+     </div>
+    </div>
+   </div>
+  </section>
+
+  <section class="form-section" id="campos-entrada">
+   <div class="form-section-title"><i class="bi bi-box-arrow-in-down"></i>Datos de la entrada</div>
+   <div class="row g-3">
+    <div class="col-md-3">
+     <label class="form-label">Costo unitario</label>
+     <div class="input-group">
+      <span class="input-group-text">$</span>
+      <input type="number" step="0.01" min="0" name="costo_unitario" id="costo_unitario" class="form-control" placeholder="Costo de esta compra">
+     </div>
+     <div class="form-text">Si se deja vacío, se usa el costo actual.</div>
+    </div>
+    <div class="col-md-3">
+     <label class="form-label">Proveedor</label>
+     <select name="proveedor_id" id="proveedor_id" class="form-select">
+      <option value="">— Sin proveedor —</option>
+      {% for pr in proveedores %}<option value="{{ pr.id }}">{{ pr.nombre }}</option>{% endfor %}
+     </select>
+    </div>
+    <div class="col-md-3">
+     <label class="form-label">Código de lote</label>
+     <input name="lote_codigo" class="form-control" maxlength="50" placeholder="Ej. L-2026-01">
+     <div class="form-text">Opcional, requiere fecha de vencimiento.</div>
+    </div>
+    <div class="col-md-3">
+     <label class="form-label">Fecha de vencimiento</label>
+     <input type="date" name="fecha_vencimiento" class="form-control">
+     <div class="form-text">Opcional, activa el control de caducidad.</div>
+    </div>
+    <div class="col-12">
+     <div class="form-check">
+      <input type="checkbox" class="form-check-input" name="actualizar_costo" id="actualizar_costo" checked>
+      <label class="form-check-label" for="actualizar_costo">Actualizar costo con promedio ponderado (CPP)</label>
+     </div>
+    </div>
+   </div>
+  </section>
+
+  <section class="form-section">
+   <div class="form-section-title"><i class="bi bi-chat-left-text"></i>Observación</div>
+   <textarea name="observacion" class="form-control" rows="2" placeholder="Factura, proveedor, novedad o detalle del movimiento…"></textarea>
+  </section>
+
+  <div class="form-actions">
+   <button class="btn btn-primary px-4"><i class="bi bi-check2 me-1"></i>Registrar movimiento</button>
+   <a class="btn btn-link text-secondary" href="{{ url_for('movimientos.historial') }}">Ver historial</a>
+  </div>
+ </div>
 </form>
+
+<script>
+(function () {
+  const tipo = document.getElementById('tipo');
+  const campos = document.getElementById('campos-entrada');
+  const producto = document.getElementById('producto_id');
+  const costo = document.getElementById('costo_unitario');
+  const proveedor = document.getElementById('proveedor_id');
+
+  function alternar() {
+    if (campos) campos.style.display = tipo && tipo.value === 'salida' ? 'none' : '';
+  }
+
+  if (tipo) {
+    tipo.addEventListener('change', alternar);
+    alternar();
+  }
+
+  if (producto && costo) {
+    producto.addEventListener('change', function () {
+      const opcion = producto.selectedOptions[0];
+      if (!opcion) return;
+      if (!costo.dataset.touched) costo.value = opcion.dataset.costo || '';
+      if (proveedor && opcion.dataset.proveedor) proveedor.value = opcion.dataset.proveedor;
+    });
+  }
+
+  if (costo) {
+    costo.addEventListener('input', function () { costo.dataset.touched = '1'; });
+  }
+})();
+</script>
 {% endblock %}

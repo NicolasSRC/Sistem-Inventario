@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% block title %}Rotación y pedidos{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-4">
+ <div>
+  <h3 class="page-title">Rotación y sugerencia de pedidos</h3>
+  <p class="page-sub mb-0">Ventas de los últimos {{ periodo }} días · {{ resumen.mostrados }} producto{{ '' if resumen.mostrados == 1 else 's' }} en la vista</p>
+ </div>
+ <a class="btn btn-sm btn-outline-primary" href="{{ url_for('reportes.rotacion_csv', **filtros) }}">
+  <i class="bi bi-download me-1"></i>Exportar CSV
+ </a>
+</div>
+
+<div class="row g-3 mb-4">
+ {% for icon, color, val, label in [
+  ('bi-graph-up-arrow','primary', resumen.con_rotacion, 'Productos con rotación'),
+  ('bi-graph-down-arrow','secondary', resumen.sin_rotacion, 'Sin rotación en el período'),
+  ('bi-cart-plus','warning', resumen.reponer, 'Requieren reposición'),
+  ('bi-box-seam','success', resumen.unidades_sugeridas, 'Unidades sugeridas')] %}
+ <div class="col-sm-6 col-xl-3"><div class="card shadow-sm h-100"><div class="card-body kpi">
+  <div class="kpi-icon k-{{ color }}"><i class="bi {{ icon }}"></i></div>
+  <div><div class="kpi-value">{{ val }}</div><div class="kpi-label">{{ label }}</div></div>
+ </div></div></div>
+ {% endfor %}
+</div>
+
+<form class="row g-2 mb-3" method="get">
+ <div class="col-6 col-md-2">
+  <select name="periodo" class="form-select" aria-label="Período">
+   {% for p in (7, 30, 90) %}<option value="{{ p }}" {{ 'selected' if periodo == p }}>{{ p }} días</option>{% endfor %}
+  </select>
+ </div>
+ <div class="col-6 col-md-3"><input name="q" value="{{ q }}" class="form-control" placeholder="Buscar por nombre, SKU o código de barras"></div>
+ <div class="col-6 col-md-2"><select name="categoria" class="form-select">
+  <option value="">Todas las categorías</option>
+  {% for c in categorias %}<option value="{{ c.id }}" {{ 'selected' if categoria == c.id }}>{{ c.nombre }}</option>{% endfor %}
+ </select></div>
+ <div class="col-6 col-md-3"><select name="orden" class="form-select">
+  {% for valor, etiqueta in ordenes.items() %}<option value="{{ valor }}" {{ 'selected' if orden == valor }}>{{ etiqueta }}</option>{% endfor %}
+ </select></div>
+ <div class="col-12 col-md-2 d-flex align-items-center gap-2">
+  <button class="btn btn-outline-primary flex-grow-1">Filtrar</button>
+ </div>
+ <div class="col-12 d-flex flex-wrap align-items-center gap-3">
+  <div class="form-check">
+   <input class="form-check-input" type="checkbox" name="solo_reponer" value="1" id="solo_reponer" {{ 'checked' if solo_reponer }}>
+   <label class="form-check-label" for="solo_reponer">Mostrar solo los que necesitan pedido</label>
+  </div>
+  <a href="{{ url_for('reportes.rotacion') }}" class="btn btn-link btn-sm p-0">Limpiar filtros</a>
+ </div>
+</form>
+
+<div class="table-responsive card shadow-sm">
+ <table class="table table-hover align-middle mb-0">
+  <thead><tr>
+   <th>Producto</th><th>Categoría</th><th>Proveedor</th><th class="text-end">Stock</th>
+   <th class="text-end">Salidas</th><th class="text-end">Días con salida</th>
+   <th class="text-end">Venta diaria</th><th class="text-end">Días de inventario</th>
+   <th>Rotación</th><th class="text-end">Entrega</th><th class="text-end">Punto de pedido</th>
+   <th class="text-end">Pedido sugerido</th>
+  </tr></thead>
+  <tbody>
+  {% for f in filas %}
+   {% set p = f.producto %}
+   {% if f.rotacion == 'alta' %}{% set color = 'success' %}
+   {% elif f.rotacion == 'media' %}{% set color = 'info' %}
+   {% elif f.rotacion == 'baja' %}{% set color = 'warning' %}
+   {% else %}{% set color = 'secondary' %}{% endif %}
+   <tr class="{{ 'fila-alerta' if f.reponer }}">
+    <td><div class="fw-semibold">{{ p.nombre }}</div><div class="small text-muted">{{ p.sku or 'Sin SKU' }}</div></td>
+    <td>{{ p.categoria.nombre if p.categoria else '—' }}</td>
+    <td>
+     {% if p.proveedor %}
+      <a href="{{ url_for('proveedores.editar', id=p.proveedor.id) }}" title="Ver proveedor">{{ p.proveedor.nombre }}</a>
+      {% if p.proveedor.email %}<div class="small"><a href="mailto:{{ p.proveedor.email }}">{{ p.proveedor.email }}</a></div>
+      {% elif p.proveedor.telefono %}<div class="small text-muted">{{ p.proveedor.telefono }}</div>{% endif %}
+     {% else %}<span class="text-muted">Sin proveedor</span>{% endif %}
+    </td>
+    <td class="text-end">{{ p.cantidad or 0 }}</td>
+    <td class="text-end">{{ f.unidades }}</td>
+    <td class="text-end">{{ f.frecuencia }}</td>
+    <td class="text-end">{{ '{:.2f}'.format(f.venta_diaria) }}</td>
+    <td class="text-end">{{ f.dias_inventario if f.dias_inventario is not none else '—' }}</td>
+    <td><span class="badge bg-{{ color }}">{{ f.etiqueta_rotacion }}</span></td>
+    <td class="text-end">{{ f.lead_time }} d</td>
+    <td class="text-end">{{ f.punto_pedido }}</td>
+    <td class="text-end">
+     {% if f.sugerido %}<span class="fw-bold text-primary">{{ f.sugerido }}</span>
+     {% else %}<span class="text-muted">—</span>{% endif %}
+    </td>
+   </tr>
+  {% else %}
+   <tr><td colspan="12" class="text-center text-muted py-4">No hay productos que coincidan con los filtros.</td></tr>
+  {% endfor %}
+  </tbody>
+ </table>
+</div>
+
+<div class="form-note mt-3">
+ <i class="bi bi-info-circle"></i>
+ <div>
+  El pedido sugerido cubre el consumo durante el tiempo de entrega del proveedor más
+  {{ dias_seguridad }} días de stock de seguridad, sin bajar del stock mínimo del producto.
+  La rotación se clasifica con el promedio de unidades vendidas por día:
+  alta (≥ 1), media (≥ 0.2), baja (&gt; 0) y sin rotación (0).
+ </div>
+</div>
+{% endblock %}

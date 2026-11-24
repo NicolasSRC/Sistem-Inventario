@@ -1,6 +1,7 @@
 import csv, io
-from flask import Blueprint, render_template, Response
-from ..models import Lote, Movimiento, Producto
+from flask import Blueprint, render_template, request, Response
+from ..models import Categoria, Lote, Movimiento, Producto
+from ..services.rotacion import DIAS_SEGURIDAD, ORDENES, obtener_rotacion
 from ..utils import admin_required
 
 bp = Blueprint("reportes", __name__, url_prefix="/reportes")
@@ -17,6 +18,69 @@ def _csv(nombre, filas):
 @admin_required
 def index():
     return render_template("reportes/index.html")
+
+
+def _datos_rotacion():
+    """Lee los filtros del reporte de rotación y devuelve los datos."""
+    periodo = request.args.get("periodo", type=int) or 30
+    q = request.args.get("q", "").strip()
+    categoria = request.args.get("categoria", type=int)
+    orden = request.args.get("orden", "mayor")
+    solo_reponer = request.args.get("solo_reponer") in ("1", "on", "true", "si", "sí")
+
+    resultado = obtener_rotacion(periodo, q, categoria, solo_reponer, orden)
+
+    filtros = {"periodo": resultado["periodo"], "orden": resultado["orden"]}
+    if q:
+        filtros["q"] = q
+    if categoria:
+        filtros["categoria"] = categoria
+    if solo_reponer:
+        filtros["solo_reponer"] = 1
+    return resultado, filtros
+
+
+@bp.route("/rotacion")
+@admin_required
+def rotacion():
+    resultado, filtros = _datos_rotacion()
+    return render_template(
+        "reportes/rotacion.html",
+        **resultado,
+        filtros=filtros,
+        categorias=Categoria.query.order_by(Categoria.nombre).all(),
+        ordenes=ORDENES,
+        dias_seguridad=DIAS_SEGURIDAD,
+        q=request.args.get("q", "").strip(),
+        categoria=request.args.get("categoria", type=int),
+        solo_reponer=bool(filtros.get("solo_reponer")),
+    )
+
+
+@bp.route("/rotacion.csv")
+@admin_required
+def rotacion_csv():
+    resultado, _ = _datos_rotacion()
+    filas = [["Producto", "SKU", "Categoría", "Proveedor", "Contacto", "Stock",
+              "Stock mínimo", "Unidades salidas", "Movimientos", "Días con salida",
+              "Venta diaria", "Días de inventario", "Rotación", "Tiempo de entrega (días)",
+              "Punto de pedido", "Cantidad sugerida"]]
+    for f in resultado["filas"]:
+        p = f["producto"]
+        proveedor = p.proveedor
+        contacto = ""
+        if proveedor:
+            contacto = proveedor.email or proveedor.telefono or ""
+        filas.append([
+            p.nombre, p.sku or "", p.categoria.nombre if p.categoria else "",
+            proveedor.nombre if proveedor else "", contacto,
+            p.cantidad or 0, p.stock_minimo or 0,
+            f["unidades"], f["movimientos"], f["frecuencia"],
+            f["venta_diaria"],
+            f["dias_inventario"] if f["dias_inventario"] is not None else "",
+            f["etiqueta_rotacion"], f["lead_time"], f["punto_pedido"], f["sugerido"],
+        ])
+    return _csv("rotacion", filas)
 
 
 @bp.route("/productos.csv")

@@ -31,7 +31,8 @@
    <a href="{{ url_for('movimientos.registrar') }}" class="{{ 'active' if ep=='movimientos.registrar' }}"><i class="bi bi-arrow-left-right"></i>Registrar movimiento</a>
    <a href="{{ url_for('movimientos.ajuste') }}" class="{{ 'active' if ep=='movimientos.ajuste' }}"><i class="bi bi-clipboard-minus"></i>Mermas y ajustes</a>
    <a href="{{ url_for('productos.alertas') }}" class="{{ 'active' if ep=='productos.alertas' }}"><i class="bi bi-exclamation-triangle"></i>Alertas</a>
-   <a href="{{ url_for('reportes.index') }}" class="{{ 'active' if ep.startswith('reportes.') }}"><i class="bi bi-file-earmark-spreadsheet"></i>Reportes</a>
+   <a href="{{ url_for('reportes.rotacion') }}" class="{{ 'active' if ep=='reportes.rotacion' or ep=='reportes.rotacion_csv' }}"><i class="bi bi-graph-up-arrow"></i>Rotación y pedidos</a>
+   <a href="{{ url_for('reportes.index') }}" class="{{ 'active' if ep.startswith('reportes.') and ep not in ('reportes.rotacion', 'reportes.rotacion_csv') }}"><i class="bi bi-file-earmark-spreadsheet"></i>Reportes</a>
    {% endif %}
   </nav>
   <div class="sidebar-user">

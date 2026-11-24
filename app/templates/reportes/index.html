@@ -1,11 +1,31 @@
 {% extends "base.html" %}
 {% block title %}Reportes{% endblock %}
 {% block content %}
-<h3 class="page-title mb-3">Reportes (CSV)</h3>
+<div class="mb-4">
+ <h3 class="page-title">Reportes</h3>
+ <p class="page-sub mb-0">Informes en pantalla y exportaciones compatibles con Excel</p>
+</div>
+
+<div class="card shadow-sm mb-4" style="max-width:640px">
+ <div class="card-body d-flex flex-wrap align-items-center gap-3">
+  <div class="kpi-icon k-primary"><i class="bi bi-graph-up-arrow"></i></div>
+  <div class="flex-grow-1">
+   <div class="fw-semibold">Rotación y sugerencia de pedidos</div>
+   <div class="small text-muted">Mayor y menor rotación, días de inventario y pedido recomendado por producto.</div>
+  </div>
+  <div class="d-flex gap-2">
+   <a class="btn btn-sm btn-primary" href="{{ url_for('reportes.rotacion') }}"><i class="bi bi-eye me-1"></i>Ver reporte</a>
+   <a class="btn btn-sm btn-outline-primary" href="{{ url_for('reportes.rotacion_csv') }}"><i class="bi bi-download me-1"></i>CSV</a>
+  </div>
+ </div>
+</div>
+
+<h6 class="text-uppercase text-muted fw-bold small mb-2">Descargas CSV</h6>
 <div class="list-group" style="max-width:480px">
  <a class="list-group-item list-group-item-action" href="{{ url_for('reportes.productos') }}"><i class="bi bi-download me-2"></i>Descargar listado de productos</a>
  <a class="list-group-item list-group-item-action" href="{{ url_for('reportes.movimientos') }}"><i class="bi bi-download me-2"></i>Descargar historial de movimientos</a>
  <a class="list-group-item list-group-item-action" href="{{ url_for('reportes.lotes') }}"><i class="bi bi-download me-2"></i>Descargar lotes y vencimientos</a>
  <a class="list-group-item list-group-item-action" href="{{ url_for('reportes.mermas') }}"><i class="bi bi-download me-2"></i>Descargar mermas</a>
+ <a class="list-group-item list-group-item-action" href="{{ url_for('reportes.rotacion_csv') }}"><i class="bi bi-download me-2"></i>Descargar rotación y pedidos sugeridos</a>
 </div>
 {% endblock %}

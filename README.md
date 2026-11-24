@@ -84,7 +84,7 @@ flask --app run.py db migrate -m "descripcion del cambio"
 flask --app run.py db upgrade
 python -m pytest -q
 ```
-La suite actual contiene **46 pruebas** que cubren autenticación, productos, proveedores, inventario, lotes, mermas, dashboard y venta rápida.
+La suite actual contiene **54 pruebas** que cubren autenticación, productos, proveedores, inventario, lotes, mermas, dashboard, venta rápida y rotación de inventario.
 
 ## 3. Usuarios y permisos
 
@@ -107,6 +107,7 @@ La suite actual contiene **46 pruebas** que cubren autenticación, productos, pr
 | Registrar mermas y ajustes | ✅ | ❌ |
 | Gestionar lotes y vencimientos | ✅ | ❌ |
 | Ver alertas de stock bajo | ✅ | ❌ |
+| Consultar rotación y sugerencia de pedidos | ✅ | ❌ |
 | Exportar reportes CSV | ✅ | ❌ |
 
 ## 4. Funcionalidades
@@ -125,7 +126,7 @@ La suite actual contiene **46 pruebas** que cubren autenticación, productos, pr
 | Ajustes y mermas | Pérdidas, daños, vencimientos y diferencias de conteo con motivo, usuario e impacto | RF-08 | ✅ |
 | Alertas | Productos con cantidad ≤ stock mínimo y lotes vencidos o por vencer | RF-06 | ✅ |
 | Reportes | Exportación de productos, movimientos, lotes y mermas a CSV (compatible con Excel) | RF-09 | ✅ |
-| Rotación y reposición | Días de inventario y sugerencia de pedido según ventas y tiempo de entrega del proveedor | RF-14 | ⏳ |
+| Rotación y reposición | Mayor y menor rotación, días de inventario y pedido sugerido según ventas, tiempo de entrega y stock mínimo, con vista en pantalla y CSV | RF-14 | ✅ |
 | Multi-sede | Stock y movimientos independientes por sucursal, con selector de sede | RNF-06 | ⏳ |
 | Respaldos y despliegue | Copias de seguridad, `SECRET_KEY` externa y publicación web | RNF-04, RNF-05 | ⏳ |
 | Pruebas no funcionales | Rendimiento, usabilidad y verificación responsiva final | RNF-01, RNF-02, RNF-03 | ⏳ |
@@ -144,6 +145,8 @@ Reglas de negocio del inventario:
 - Las **mermas** siempre descuentan stock; los **ajustes** pueden aumentarlo o disminuirlo según el conteo físico.
 - Una merma o un ajuste negativo no puede dejar el stock en negativo y consume lotes con FEFO.
 - La **venta rápida** está disponible para tendero y cajero; descuenta stock de inmediato y no permite vender más de lo disponible.
+- La **rotación** se calcula con las salidas reales de 7, 30 o 90 días y se clasifica por el promedio vendido por día: alta (≥ 1), media (≥ 0.2), baja (> 0) y sin rotación (0).
+- El **pedido sugerido** cubre el consumo durante el tiempo de entrega del proveedor más 7 días de stock de seguridad, sin bajar del stock mínimo del producto.
 - Los ingresos del dashboard son estimados con el precio de venta actual del producto.
 - Los productos no se eliminan: se **desactivan** para conservar su historial y se pueden reactivar.
 
@@ -155,7 +158,7 @@ sistema_inventario/
 │   ├── cli.py             # Comandos init-db y seed-base
 │   ├── models.py          # Usuario, Sucursal, Proveedor, Categoria, Producto, Lote, Movimiento
 │   ├── utils.py           # Decorador admin_required
-│   ├── services/          # Lógica de inventario (entradas, salidas, ajustes y mermas)
+│   ├── services/          # Lógica de inventario y cálculo de rotación/reposición
 │   ├── routes/            # auth, productos, categorias, proveedores, lotes, movimientos, dashboard, reportes
 │   ├── templates/         # Plantillas Jinja2 (Bootstrap 5)
 │   └── static/            # css/ y js/

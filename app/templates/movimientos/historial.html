@@ -1,7 +1,15 @@
 {% extends "base.html" %}
 {% block title %}Historial{% endblock %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-3"><h3 class="page-title">Historial de movimientos</h3>
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+ <div>
+  <h3 class="page-title">Historial de movimientos</h3>
+  <p class="page-sub mb-0">
+   Filtro aplicado:
+   <strong>{% if tipo == 'entrada' %}Entradas{% elif tipo == 'salida' %}Salidas{% elif tipo == 'ajuste' %}Ajustes{% elif tipo == 'merma' %}Mermas{% else %}Todos{% endif %}</strong>
+   · {{ movimientos|length }} registro{{ '' if movimientos|length == 1 else 's' }}.
+  </p>
+ </div>
  <div class="btn-group flex-wrap"><a class="btn btn-sm btn-outline-secondary {{ 'active' if not tipo }}" href="?">Todos</a>
  <a class="btn btn-sm btn-outline-success {{ 'active' if tipo=='entrada' }}" href="?tipo=entrada">Entradas</a>
  <a class="btn btn-sm btn-outline-danger {{ 'active' if tipo=='salida' }}" href="?tipo=salida">Salidas</a>

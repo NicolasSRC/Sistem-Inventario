@@ -23,6 +23,8 @@ def historial():
     q = Movimiento.query
     if tipo in TIPOS:
         q = q.filter_by(tipo=tipo)
+    else:
+        tipo = ""
     return render_template("movimientos/historial.html",
                            movimientos=q.order_by(Movimiento.fecha.desc()).all(), tipo=tipo)
 

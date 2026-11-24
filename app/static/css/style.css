@@ -79,6 +79,7 @@ body { background:#f3f4f6; font-family:system-ui,-apple-system,"Segoe UI",Roboto
 .kpi-icon.k-primary { background:var(--primary); } .kpi-icon.k-success { background:#16a34a; }
 .kpi-icon.k-info { background:#0891b2; } .kpi-icon.k-warning { background:#d97706; }
 .kpi-icon.k-danger { background:#dc2626; } .kpi-icon.k-dark { background:#334155; }
+.kpi-icon.k-secondary { background:#64748b; }
 .kpi-value { color:#111827; } .kpi-label { color:#374151; font-weight:500; }
 .table thead th { color:#374151; background:#eef2f7; }
 .table-responsive {

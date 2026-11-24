@@ -23,8 +23,8 @@ Aplicación web para registrar productos, controlar entradas, salidas y ventas, 
 
 ## Estado del proyecto
 
-- **Implementado:** autenticación y roles, productos, categorías, proveedores, inventario, ventas, lotes y vencimientos, mermas y ajustes, alertas, historial, reportes CSV y dashboard con gráficos.
-- **Pendiente:** rotación y sugerencia de pedidos, operación multi-sede, respaldos y despliegue, y cierre de pruebas no funcionales.
+- **Implementado:** autenticación y roles, productos, categorías, proveedores, inventario, ventas, lotes y vencimientos, mermas y ajustes, alertas, historial, reportes CSV, rotación con sugerencia de pedidos y dashboard con gráficos.
+- **Pendiente:** operación multi-sede, respaldos, seguridad y despliegue, y cierre de pruebas no funcionales.
 
 El alcance funcional se detalla en la sección [Funcionalidades](#4-funcionalidades).
 

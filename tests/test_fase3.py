@@ -6,7 +6,8 @@ from app.services.inventario import InventarioError, registrar_entrada, registra
 
 
 def _producto(nombre="Producto", cantidad=10, precio_compra=1000, precio=2000):
-    return Producto(nombre=nombre, precio=precio, precio_compra=precio_compra, cantidad=cantidad)
+    return Producto(nombre=nombre, precio=precio, precio_compra=precio_compra,
+                    cantidad=cantidad, sucursal_id=1)  # Principal
 
 
 def test_entrada_actualiza_stock_y_costo_promedio(app):

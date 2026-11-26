@@ -2,6 +2,7 @@ import csv, io
 from flask import Blueprint, render_template, request, Response
 from ..models import Categoria, Lote, Movimiento, Producto
 from ..services.rotacion import DIAS_SEGURIDAD, ORDENES, obtener_rotacion
+from ..services.sucursales import filtrar, sucursal_actual
 from ..utils import admin_required
 
 bp = Blueprint("reportes", __name__, url_prefix="/reportes")
@@ -28,7 +29,9 @@ def _datos_rotacion():
     orden = request.args.get("orden", "mayor")
     solo_reponer = request.args.get("solo_reponer") in ("1", "on", "true", "si", "sí")
 
-    resultado = obtener_rotacion(periodo, q, categoria, solo_reponer, orden)
+    sucursal = sucursal_actual()
+    resultado = obtener_rotacion(periodo, q, categoria, solo_reponer, orden,
+                                 sucursal_id=sucursal.id if sucursal else None)
 
     filtros = {"periodo": resultado["periodo"], "orden": resultado["orden"]}
     if q:
@@ -87,7 +90,7 @@ def rotacion_csv():
 @admin_required
 def productos():
     filas = [["ID", "Nombre", "SKU", "Código de barras", "Categoría", "Proveedor", "Precio", "Cantidad", "Stock mínimo", "Valor total", "Estado"]]
-    for p in Producto.query.order_by(Producto.nombre):
+    for p in filtrar(Producto.query, Producto).order_by(Producto.nombre):
         filas.append([p.id, p.nombre, p.sku or "", p.codigo_barras or "",
                       p.categoria.nombre if p.categoria else "",
                       p.proveedor.nombre if p.proveedor else "",
@@ -101,7 +104,7 @@ def productos():
 def movimientos():
     filas = [["ID", "Fecha", "Producto", "Tipo", "Motivo", "Cantidad", "Efecto", "Lote", "Vencimiento",
               "Costo unitario", "Impacto", "Stock anterior", "Stock nuevo", "Usuario", "Observación"]]
-    for m in Movimiento.query.order_by(Movimiento.fecha.desc()):
+    for m in filtrar(Movimiento.query, Movimiento).order_by(Movimiento.fecha.desc()):
         filas.append([m.id, m.fecha.strftime("%Y-%m-%d %H:%M"), m.producto.nombre,
                       m.tipo, m.motivo or "", m.cantidad, m.efecto,
                       m.lote.codigo if m.lote else "",
@@ -118,7 +121,8 @@ def movimientos():
 def mermas():
     filas = [["ID", "Fecha", "Producto", "Motivo", "Cantidad", "Costo unitario",
               "Impacto", "Usuario", "Observación"]]
-    consulta = (Movimiento.query.filter(Movimiento.tipo == "merma")
+    consulta = (filtrar(Movimiento.query, Movimiento)
+                .filter(Movimiento.tipo == "merma")
                 .order_by(Movimiento.fecha.desc()))
     for m in consulta:
         filas.append([m.id, m.fecha.strftime("%Y-%m-%d %H:%M"), m.producto.nombre,
@@ -132,7 +136,7 @@ def mermas():
 def lotes():
     filas = [["Producto", "SKU", "Lote", "Vencimiento", "Días para vencer", "Cantidad inicial",
               "Cantidad actual", "Costo unitario", "Valor", "Estado"]]
-    consulta = (Lote.query.join(Producto)
+    consulta = (filtrar(Lote.query, Lote).join(Producto)
                 .filter(Producto.activo.is_(True), Lote.cantidad_actual > 0)
                 .order_by(Lote.fecha_vencimiento.is_(None), Lote.fecha_vencimiento, Lote.id))
     for l in consulta:

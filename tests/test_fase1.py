@@ -42,9 +42,11 @@ def test_proveedor_producto_y_lote(app):
             dias_alerta_vencimiento=15,
             categoria=categoria,
             proveedor=proveedor,
+            sucursal_id=1,  # Principal
         )
         lote = Lote(
             producto=producto,
+            sucursal_id=1,
             codigo="L-001",
             fecha_vencimiento=date.today() + timedelta(days=10),
             cantidad_inicial=10,
@@ -65,13 +67,15 @@ def test_proveedor_producto_y_lote(app):
 def test_movimiento_con_trazabilidad(app):
     with app.app_context():
         admin = Usuario.query.filter_by(username="admin").first()
-        producto = Producto(nombre="Producto de prueba", precio=1000, precio_compra=700, cantidad=10)
+        producto = Producto(nombre="Producto de prueba", precio=1000, precio_compra=700, cantidad=10,
+                            sucursal_id=1)
         db.session.add(producto)
         db.session.commit()
 
         movimiento = Movimiento(
             producto=producto,
             usuario_id=admin.id,
+            sucursal_id=1,
             tipo="entrada",
             motivo="compra",
             cantidad=5,
@@ -92,12 +96,13 @@ def test_movimiento_con_trazabilidad(app):
 
 def test_movimiento_salida_y_ajuste(app):
     with app.app_context():
-        producto = Producto(nombre="Producto 2", precio=2000, precio_compra=1200, cantidad=20)
+        producto = Producto(nombre="Producto 2", precio=2000, precio_compra=1200, cantidad=20,
+                            sucursal_id=1)
         db.session.add(producto)
         db.session.commit()
 
-        salida = Movimiento(producto_id=producto.id, tipo="salida", cantidad=3)
-        ajuste = Movimiento(producto_id=producto.id, tipo="ajuste", cantidad=0, delta=-2)
+        salida = Movimiento(producto_id=producto.id, sucursal_id=1, tipo="salida", cantidad=3)
+        ajuste = Movimiento(producto_id=producto.id, sucursal_id=1, tipo="ajuste", cantidad=0, delta=-2)
         assert salida.efecto == -3
         assert ajuste.efecto == -2
 

@@ -78,12 +78,14 @@ class Producto(db.Model):
     cantidad = db.Column(db.Integer, default=0)
     categoria_id = db.Column(db.Integer, db.ForeignKey("categorias.id"))
     proveedor_id = db.Column(db.Integer, db.ForeignKey("proveedores.id"))
+    sucursal_id = db.Column(db.Integer, db.ForeignKey("sucursales.id"), nullable=False)
     stock_minimo = db.Column(db.Integer, default=5)
     dias_alerta_vencimiento = db.Column(db.Integer, nullable=False, default=15, server_default="15")
     activo = db.Column(db.Boolean, nullable=False, default=True, server_default=db.text("1"))
     created_at = db.Column(db.DateTime, default=datetime.now)
 
     proveedor = db.relationship("Proveedor", backref=db.backref("productos", lazy=True))
+    sucursal = db.relationship("Sucursal", backref=db.backref("productos", lazy=True))
     movimientos = db.relationship("Movimiento", backref="producto", lazy=True,
                                   cascade="all, delete-orphan")
     lotes = db.relationship("Lote", backref="producto", lazy=True,
@@ -91,6 +93,7 @@ class Producto(db.Model):
 
     __table_args__ = (
         db.Index("ix_productos_nombre", "nombre"),
+        db.Index("ix_productos_sucursal", "sucursal_id"),
     )
 
     @property
@@ -108,6 +111,7 @@ class Lote(db.Model):
     __tablename__ = "lotes"
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     producto_id = db.Column(db.Integer, db.ForeignKey("productos.id"), nullable=False)
+    sucursal_id = db.Column(db.Integer, db.ForeignKey("sucursales.id"), nullable=False)
     codigo = db.Column(db.String(50))
     fecha_vencimiento = db.Column(db.Date)
     cantidad_inicial = db.Column(db.Integer, nullable=False, default=0, server_default="0")
@@ -115,9 +119,12 @@ class Lote(db.Model):
     costo_unitario = db.Column(db.Float, nullable=False, default=0, server_default="0")
     created_at = db.Column(db.DateTime, default=datetime.now)
 
+    sucursal = db.relationship("Sucursal", backref=db.backref("lotes", lazy=True))
+
     __table_args__ = (
         db.UniqueConstraint("producto_id", "codigo", name="uq_lotes_producto_codigo"),
         db.Index("ix_lotes_fecha_vencimiento", "fecha_vencimiento"),
+        db.Index("ix_lotes_sucursal", "sucursal_id"),
     )
 
     @property
@@ -144,6 +151,7 @@ class Movimiento(db.Model):
     producto_id = db.Column(db.Integer, db.ForeignKey("productos.id"), nullable=False)
     usuario_id = db.Column(db.Integer, db.ForeignKey("usuarios.id"))
     lote_id = db.Column(db.Integer, db.ForeignKey("lotes.id"))
+    sucursal_id = db.Column(db.Integer, db.ForeignKey("sucursales.id"), nullable=False)
     tipo = db.Column(db.String(10), nullable=False)  # entrada | salida | ajuste | merma
     motivo = db.Column(db.String(30))  # compra | venta | vencimiento | dano | diferencia_conteo...
     cantidad = db.Column(db.Integer, nullable=False)
@@ -157,10 +165,12 @@ class Movimiento(db.Model):
 
     usuario = db.relationship("Usuario", backref="movimientos")
     lote = db.relationship("Lote", backref=db.backref("movimientos", lazy=True))
+    sucursal = db.relationship("Sucursal", backref=db.backref("movimientos", lazy=True))
 
     __table_args__ = (
         db.Index("ix_movimientos_fecha", "fecha"),
         db.Index("ix_movimientos_producto_fecha", "producto_id", "fecha"),
+        db.Index("ix_movimientos_sucursal", "sucursal_id"),
     )
 
     @property

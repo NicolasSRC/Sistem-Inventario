@@ -9,6 +9,7 @@ from ..services.inventario import (
     registrar_entrada,
     registrar_salida,
 )
+from ..services.sucursales import filtrar, producto_actual, productos_query
 from ..utils import admin_required
 
 bp = Blueprint("movimientos", __name__, url_prefix="/movimientos")
@@ -20,7 +21,7 @@ TIPOS = ("entrada", "salida", "ajuste", "merma")
 @login_required
 def historial():
     tipo = request.args.get("tipo", "")
-    q = Movimiento.query
+    q = filtrar(Movimiento.query, Movimiento)
     if tipo in TIPOS:
         q = q.filter_by(tipo=tipo)
     else:
@@ -32,13 +33,13 @@ def historial():
 @bp.route("/venta", methods=["GET", "POST"])
 @login_required
 def venta():
-    productos = (Producto.query
+    productos = (productos_query()
                  .filter(Producto.activo.is_(True), Producto.cantidad > 0)
                  .order_by(Producto.nombre)
                  .all())
 
     if request.method == "POST":
-        p = db.session.get(Producto, request.form.get("producto_id", type=int) or 0)
+        p = producto_actual(request.form.get("producto_id", type=int) or 0)
         cantidad = request.form.get("cantidad", type=int)
         observacion = request.form.get("observacion", "").strip()
 
@@ -76,12 +77,12 @@ def venta():
 @bp.route("/registrar", methods=["GET", "POST"])
 @admin_required
 def registrar():
-    productos = Producto.query.filter_by(activo=True).order_by(Producto.nombre).all()
+    productos = productos_query().filter_by(activo=True).order_by(Producto.nombre).all()
     proveedores = Proveedor.query.filter_by(activo=True).order_by(Proveedor.nombre).all()
     contexto = {"productos": productos, "proveedores": proveedores}
 
     if request.method == "POST":
-        p = db.session.get(Producto, request.form.get("producto_id", type=int) or 0)
+        p = producto_actual(request.form.get("producto_id", type=int) or 0)
         tipo = request.form.get("tipo")
         cantidad = request.form.get("cantidad", type=int)
         observacion = request.form.get("observacion", "").strip()
@@ -146,11 +147,11 @@ def registrar():
 @bp.route("/ajuste", methods=["GET", "POST"])
 @admin_required
 def ajuste():
-    productos = Producto.query.filter_by(activo=True).order_by(Producto.nombre).all()
+    productos = productos_query().filter_by(activo=True).order_by(Producto.nombre).all()
     contexto = {"productos": productos}
 
     if request.method == "POST":
-        p = db.session.get(Producto, request.form.get("producto_id", type=int) or 0)
+        p = producto_actual(request.form.get("producto_id", type=int) or 0)
         tipo = request.form.get("tipo")
         cantidad = request.form.get("cantidad", type=int)
         motivo = request.form.get("motivo", "")

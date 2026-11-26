@@ -13,6 +13,7 @@ def _crear_producto(app, nombre="Producto venta", sku="VTA-001", cantidad=10, pr
             cantidad=cantidad,
             stock_minimo=1,
             activo=True,
+            sucursal_id=1,  # Principal
         )
         db.session.add(producto)
         db.session.commit()

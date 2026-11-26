@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session
 from flask_login import login_user, logout_user, login_required, current_user
 from ..models import Usuario
 
@@ -14,6 +14,8 @@ def login():
         u = Usuario.query.filter_by(username=request.form.get("username", "").strip()).first()
         if u and u.check_password(request.form.get("password", "")):
             login_user(u)
+            # Cada sesión inicia en la sucursal asignada al usuario.
+            session.pop("sucursal_id", None)
             return redirect(url_for("dashboard.index"))
         flash("Usuario o contraseña incorrectos.", "danger")
     return render_template("login.html")
@@ -23,5 +25,6 @@ def login():
 @login_required
 def logout():
     logout_user()
+    session.pop("sucursal_id", None)
     flash("Sesión cerrada correctamente.", "success")
     return redirect(url_for("auth.login"))

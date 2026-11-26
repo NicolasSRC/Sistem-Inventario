@@ -13,9 +13,11 @@ from flask_migrate import upgrade
 
 from app import create_app, db
 from app.cli import sembrar_base
-from app.models import Categoria, Lote, Movimiento, Producto, Proveedor, Usuario
+from app.models import Categoria, Lote, Movimiento, Producto, Proveedor, Sucursal, Usuario
 
 CATEGORIAS = ["General", "Electrónica", "Papelería", "Hogar", "Herramientas", "Aseo", "Alimentos"]
+
+SUCURSAL_NORTE = "Sucursal Norte"
 
 # (nombre, nit, contacto, teléfono, correo, dirección, lead_time_dias)
 PROVEEDORES = [
@@ -63,6 +65,16 @@ PRODUCTOS = [
     ("Azúcar 1 kg", "ALI-002", "Alimentos", 4800, 25, "Refinada"),
     ("Arroz 5 kg", "ALI-003", "Alimentos", 21500, 15, "Grano largo"),
     ("Aceite vegetal 3 L", "ALI-004", "Alimentos", 36000, 10, "Girasol"),
+]
+
+# Catálogo de demostración de la segunda sucursal.
+# (nombre, sku, categoría, precio, stock_minimo, descripción)
+PRODUCTOS_NORTE = [
+    ("Café orgánico 500 g", "NOR-ALI-001", "Alimentos", 22000, 10, "Tueste medio, origen Huila"),
+    ("Chocolate de mesa x6", "NOR-ALI-002", "Alimentos", 16500, 12, "Tabletas de 500 g"),
+    ("Jabón de manos 500 ml", "NOR-ASE-001", "Aseo", 9500, 15, "Aroma neutro"),
+    ("Cuaderno argollado", "NOR-PAP-001", "Papelería", 12500, 20, "100 hojas, cuadriculado"),
+    ("Extensión eléctrica 3 m", "NOR-ELE-001", "Electrónica", 32000, 8, "Cuatro tomas con interruptor"),
 ]
 
 OBS_ENTRADA = ["Compra a proveedor", "Reposición de inventario", "Devolución de cliente", "Ajuste de inventario"]
@@ -146,6 +158,7 @@ def simular_movimientos(p, admin_id, rnd, objetivo, indice=0):
         db.session.add(Movimiento(
             producto=p,
             usuario_id=admin_id,
+            sucursal_id=p.sucursal_id,
             costo_unitario=p.precio_compra,
             impacto=round(abs(registro["delta"]) * (p.precio_compra or 0), 2),
             **registro,
@@ -167,6 +180,7 @@ def simular_movimientos(p, admin_id, rnd, objetivo, indice=0):
                 continue
             db.session.add(Lote(
                 producto=p,
+                sucursal_id=p.sucursal_id,
                 codigo="L-%02d" % j,
                 fecha_vencimiento=date.today() + timedelta(days=dias),
                 cantidad_inicial=cantidad,
@@ -180,6 +194,14 @@ def poblar():
     sembrar_base()
     asegurar_categorias()
 
+    principal = Sucursal.query.filter_by(nombre="Principal").first()
+    norte = Sucursal.query.filter_by(nombre=SUCURSAL_NORTE).first()
+    if not norte:
+        norte = Sucursal(nombre=SUCURSAL_NORTE, direccion="Calle 10 #20-30",
+                         telefono="3200000000")
+        db.session.add(norte)
+    db.session.flush()
+
     proveedores = {}
     for nombre, nit, contacto, telefono, email, direccion, lead in PROVEEDORES:
         pr = Proveedor.query.filter_by(nombre=nombre).first()
@@ -191,6 +213,11 @@ def poblar():
     db.session.flush()
 
     admin = Usuario.query.filter_by(username="admin").first()
+    if not Usuario.query.filter_by(username="norte").first():
+        cajero_norte = Usuario(username="norte", rol="cajero", sucursal=norte)
+        cajero_norte.set_password("norte123")
+        db.session.add(cajero_norte)
+
     nuevos = 0
     for i, (nombre, sku, cat, precio, minimo, desc) in enumerate(PRODUCTOS):
         if Producto.query.filter_by(sku=sku).first():
@@ -208,13 +235,42 @@ def poblar():
             activo=True,
             categoria_id=c.id,
             proveedor=proveedores.get(CATEGORIA_PROVEEDOR.get(cat)),
+            sucursal=principal,
             cantidad=0,
             created_at=datetime.now() - timedelta(days=62),
         )
         db.session.add(p)
+        db.session.flush()  # asigna p.sucursal_id antes de simular movimientos y lotes
         objetivo = "agotado" if i % 11 == 7 else "bajo" if i % 5 == 2 else "normal"
         simular_movimientos(p, admin.id, rnd, objetivo, i)
         nuevos += 1
+
+    for j, (nombre, sku, cat, precio, minimo, desc) in enumerate(PRODUCTOS_NORTE):
+        if Producto.query.filter_by(sku=sku).first():
+            continue
+        c = Categoria.query.filter_by(nombre=cat).first()
+        p = Producto(
+            nombre=nombre,
+            sku=sku,
+            codigo_barras="771%010d" % (j + 1),
+            descripcion=desc,
+            precio=precio,
+            precio_compra=round(precio * 0.7, 2),
+            stock_minimo=minimo,
+            dias_alerta_vencimiento=15,
+            activo=True,
+            categoria_id=c.id,
+            proveedor=proveedores.get(CATEGORIA_PROVEEDOR.get(cat)),
+            sucursal=norte,
+            cantidad=0,
+            created_at=datetime.now() - timedelta(days=62),
+        )
+        db.session.add(p)
+        db.session.flush()  # asigna p.sucursal_id antes de simular movimientos y lotes
+        objetivo = "bajo" if j == 1 else "normal"
+        simular_movimientos(p, admin.id, rnd, objetivo, j + 3)
+        nuevos += 1
+
     db.session.commit()
     return nuevos
 
@@ -237,7 +293,8 @@ if __name__ == "__main__":
         bajos = Producto.query.filter(Producto.cantidad <= Producto.stock_minimo).count()
         ajustes = Movimiento.query.filter_by(tipo="ajuste").count()
         mermas = Movimiento.query.filter_by(tipo="merma").count()
-        print("Productos nuevos: %d | Total productos: %d | Categorías: %d | Proveedores: %d | Lotes: %d | Movimientos: %d (ajustes: %d, mermas: %d) | Con stock bajo: %d"
-              % (n, Producto.query.count(), Categoria.query.count(), Proveedor.query.count(),
-                 Lote.query.count(), Movimiento.query.count(), ajustes, mermas, bajos))
-        print("Usuarios: admin/admin123 (tendero) y cliente/cliente123 (cajero)")
+        print("Productos nuevos: %d | Total productos: %d | Sucursales: %d | Categorías: %d | Proveedores: %d | Lotes: %d | Movimientos: %d (ajustes: %d, mermas: %d) | Con stock bajo: %d"
+              % (n, Producto.query.count(), Sucursal.query.count(), Categoria.query.count(),
+                 Proveedor.query.count(), Lote.query.count(), Movimiento.query.count(),
+                 ajustes, mermas, bajos))
+        print("Usuarios: admin/admin123 (tendero), cliente/cliente123 (cajero) y norte/norte123 (cajero de Sucursal Norte)")

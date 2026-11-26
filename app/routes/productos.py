@@ -1,9 +1,10 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask import Blueprint, abort, render_template, request, redirect, url_for, flash
 from flask_login import current_user, login_required
 
 from .. import db
 from ..models import Producto, Categoria, Proveedor
 from ..services.inventario import InventarioError, registrar_entrada
+from ..services.sucursales import producto_actual, productos_query, sucursal_actual
 from ..utils import admin_required
 
 bp = Blueprint("productos", __name__, url_prefix="/productos")
@@ -21,7 +22,7 @@ def _filtrar():
     if not current_user.es_admin:
         estado = "activos"
 
-    query = Producto.query
+    query = productos_query()
     if estado == "activos":
         query = query.filter(Producto.activo.is_(True))
     elif estado == "inactivos":
@@ -59,7 +60,7 @@ def lista():
 @bp.route("/alertas")
 @admin_required
 def alertas():
-    items = Producto.query.filter(
+    items = productos_query().filter(
         Producto.activo.is_(True),
         Producto.cantidad <= Producto.stock_minimo,
     ).order_by(Producto.cantidad).all()
@@ -117,6 +118,11 @@ def _guardar(p):
     p.categoria_id = int(f["categoria_id"]) if f.get("categoria_id") else None
 
     if es_nuevo:
+        sucursal = sucursal_actual()
+        if sucursal is None:
+            flash("No hay una sucursal activa disponible.", "danger")
+            return False
+        p.sucursal = sucursal
         p.precio_compra = precio_compra
         p.cantidad = 0
         p.activo = True
@@ -157,7 +163,9 @@ def nuevo():
 @bp.route("/<int:id>/editar", methods=["GET", "POST"])
 @admin_required
 def editar(id):
-    p = db.get_or_404(Producto, id)
+    p = producto_actual(id)
+    if not p:
+        abort(404)
     if request.method == "POST" and _guardar(p):
         flash("Producto actualizado.", "success")
         return redirect(url_for("productos.lista"))
@@ -168,7 +176,9 @@ def editar(id):
 @bp.route("/<int:id>/estado", methods=["POST"])
 @admin_required
 def cambiar_estado(id):
-    p = db.get_or_404(Producto, id)
+    p = producto_actual(id)
+    if not p:
+        abort(404)
     p.activo = not p.activo
     db.session.commit()
     if p.activo:

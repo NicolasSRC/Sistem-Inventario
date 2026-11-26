@@ -6,6 +6,7 @@ from sqlalchemy import func
 
 from .. import db
 from ..models import Lote, Movimiento, Producto
+from ..services.sucursales import sucursal_actual
 
 bp = Blueprint("dashboard", __name__)
 
@@ -22,15 +23,28 @@ def index():
     hoy = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
     desde = hoy - timedelta(days=periodo - 1)
 
-    activos = Producto.query.filter_by(activo=True)
+    sucursal = sucursal_actual()
+    sucursal_id = sucursal.id if sucursal else None
+
+    def por_sucursal(query, modelo):
+        if sucursal_id is None:
+            return query
+        return query.filter(modelo.sucursal_id == sucursal_id)
+
+    activos = por_sucursal(Producto.query, Producto).filter_by(activo=True)
     total = activos.count()
-    unidades = db.session.query(func.coalesce(func.sum(Producto.cantidad), 0)).filter(Producto.activo.is_(True)).scalar()
-    valor = db.session.query(func.coalesce(func.sum(Producto.precio * Producto.cantidad), 0)).filter(Producto.activo.is_(True)).scalar()
+    unidades = por_sucursal(
+        db.session.query(func.coalesce(func.sum(Producto.cantidad), 0)), Producto
+    ).filter(Producto.activo.is_(True)).scalar()
+    valor = por_sucursal(
+        db.session.query(func.coalesce(func.sum(Producto.precio * Producto.cantidad), 0)), Producto
+    ).filter(Producto.activo.is_(True)).scalar()
     alertas = activos.filter(Producto.cantidad <= Producto.stock_minimo).count()
-    ultimos = Movimiento.query.order_by(Movimiento.fecha.desc()).limit(8).all()
+    ultimos = (por_sucursal(Movimiento.query, Movimiento)
+               .order_by(Movimiento.fecha.desc()).limit(8).all())
 
     # Ventas del período (las salidas pueden generar varios movimientos por lote).
-    ventas = (Movimiento.query.join(Producto)
+    ventas = (por_sucursal(Movimiento.query, Movimiento).join(Producto)
               .filter(Movimiento.tipo == "salida", Movimiento.fecha >= desde)
               .all())
     dias = [desde.date() + timedelta(days=i) for i in range(periodo)]
@@ -60,7 +74,7 @@ def index():
 
     ventas_hoy = unidades_dia.get(hoy.date(), 0)
     ingresos_hoy = ingresos_dia.get(hoy.date(), 0)
-    movimientos_hoy = Movimiento.query.filter(Movimiento.fecha >= hoy).count()
+    movimientos_hoy = por_sucursal(Movimiento.query, Movimiento).filter(Movimiento.fecha >= hoy).count()
 
     # Valor del inventario por categoría.
     categorias = {}
@@ -72,18 +86,18 @@ def index():
     categorias_ordenadas = sorted(categorias.items(), key=lambda x: x[1], reverse=True)
 
     inicio_mes = hoy.replace(day=1)
-    mermas_mes = Movimiento.query.filter(
+    mermas_mes = por_sucursal(Movimiento.query, Movimiento).filter(
         Movimiento.tipo == "merma", Movimiento.fecha >= inicio_mes
     ).count()
-    impacto_mermas_mes = db.session.query(
-        func.coalesce(func.sum(Movimiento.impacto), 0)
+    impacto_mermas_mes = por_sucursal(
+        db.session.query(func.coalesce(func.sum(Movimiento.impacto), 0)), Movimiento
     ).filter(Movimiento.tipo == "merma", Movimiento.fecha >= inicio_mes).scalar()
 
     lotes_por_vencer = lotes_vencidos = 0
     proximos_lotes = []
     lotes_estado = {"Vencidos": 0, "Por vencer": 0, "Vigentes": 0, "Sin fecha": 0}
     if current_user.es_admin:
-        lotes = (Lote.query.join(Producto)
+        lotes = (por_sucursal(Lote.query, Lote).join(Producto)
                  .filter(Producto.activo.is_(True), Lote.cantidad_actual > 0)
                  .all())
         lotes_por_vencer = sum(1 for l in lotes if l.por_vencer)

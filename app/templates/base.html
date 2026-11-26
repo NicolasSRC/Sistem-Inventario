@@ -17,6 +17,20 @@
    <div><div class="fw-semibold">Inventarios</div><small>Panel de gestión</small></div>
    <button class="btn-close btn-close-white d-lg-none ms-auto" data-bs-dismiss="offcanvas" data-bs-target="#sidebar"></button>
   </div>
+  {% if current_user.es_admin and sucursales %}
+  <div class="sidebar-sucursal">
+   <form method="post" action="{{ url_for('sucursales.cambiar') }}">
+    <label class="nav-label d-block" for="sucursal-activa">Sucursal activa</label>
+    <select id="sucursal-activa" name="sucursal_id" class="form-select form-select-sm"
+            aria-label="Sucursal activa" onchange="this.form.submit()">
+     {% for s in sucursales %}
+     <option value="{{ s.id }}" {{ 'selected' if sucursal_actual and s.id == sucursal_actual.id }}>{{ s.nombre }}</option>
+     {% endfor %}
+    </select>
+    <noscript><button class="btn btn-sm btn-outline-light mt-2 w-100">Cambiar sucursal</button></noscript>
+   </form>
+  </div>
+  {% endif %}
   <nav class="sidebar-nav">
    <div class="nav-label">General</div>
    <a href="{{ url_for('dashboard.index') }}" class="{{ 'active' if ep=='dashboard.index' }}"><i class="bi bi-speedometer2"></i>Dashboard</a>
@@ -37,7 +51,7 @@
   </nav>
   <div class="sidebar-user">
    <div class="avatar">{{ current_user.username[0]|upper }}</div>
-   <div class="flex-grow-1 lh-sm"><div>{{ current_user.username }}</div><small>{{ current_user.rol|capitalize }}</small></div>
+   <div class="flex-grow-1 lh-sm"><div>{{ current_user.username }}</div><small>{{ current_user.rol|capitalize }}{% if sucursal_actual %} · {{ sucursal_actual.nombre }}{% endif %}</small></div>
    <a href="{{ url_for('auth.logout') }}" class="logout" title="Cerrar sesión"><i class="bi bi-box-arrow-right"></i></a>
   </div>
  </aside>

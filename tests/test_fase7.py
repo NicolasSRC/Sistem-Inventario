@@ -30,6 +30,7 @@ def _producto(app, nombre, sku, cantidad=10, stock_minimo=5, proveedor_id=None):
             stock_minimo=stock_minimo,
             proveedor_id=proveedor_id,
             activo=True,
+            sucursal_id=1,  # Principal
         )
         db.session.add(producto)
         db.session.commit()
@@ -44,6 +45,7 @@ def _salida(app, producto_id, cantidad, dias_atras=0):
             motivo="venta",
             cantidad=cantidad,
             delta=-cantidad,
+            sucursal_id=1,  # Principal
             fecha=datetime.now() - timedelta(days=dias_atras),
         )
         db.session.add(movimiento)

@@ -38,17 +38,26 @@ def _clasificar(venta_diaria):
     return "baja"
 
 
-def calcular_rotacion(periodo=30):
-    """Calcula los indicadores de rotación de todos los productos activos."""
+def calcular_rotacion(periodo=30, sucursal_id=None):
+    """Calcula los indicadores de rotación de los productos activos.
+
+    Si se indica `sucursal_id`, solo se consideran los productos y las salidas
+    de esa sucursal.
+    """
     periodo = periodo if periodo in PERIODOS else 30
     desde = datetime.now() - timedelta(days=periodo)
 
     # Las salidas pueden generar varios movimientos para una misma venta (FEFO).
-    salidas = (Movimiento.query.join(Producto)
-               .filter(Movimiento.tipo == "salida",
-                       Movimiento.fecha >= desde,
-                       Producto.activo.is_(True))
-               .all())
+    consulta_salidas = (Movimiento.query.join(Producto)
+                        .filter(Movimiento.tipo == "salida",
+                                Movimiento.fecha >= desde,
+                                Producto.activo.is_(True)))
+    consulta_productos = Producto.query.filter_by(activo=True)
+    if sucursal_id:
+        consulta_salidas = consulta_salidas.filter(Movimiento.sucursal_id == sucursal_id)
+        consulta_productos = consulta_productos.filter(Producto.sucursal_id == sucursal_id)
+
+    salidas = consulta_salidas.all()
 
     acumulado = defaultdict(lambda: {"unidades": 0, "movimientos": 0, "dias": set()})
     for movimiento in salidas:
@@ -58,7 +67,7 @@ def calcular_rotacion(periodo=30):
         datos["dias"].add(movimiento.fecha.date())
 
     filas = []
-    for producto in Producto.query.filter_by(activo=True).order_by(Producto.nombre):
+    for producto in consulta_productos.order_by(Producto.nombre):
         datos = acumulado.get(producto.id, {"unidades": 0, "movimientos": 0, "dias": set()})
         unidades = datos["unidades"]
         venta_diaria = unidades / periodo
@@ -106,12 +115,13 @@ def _ordenar(filas, orden):
     return sorted(filas, key=lambda f: (-f["unidades"], -f["frecuencia"], f["producto"].nombre))
 
 
-def obtener_rotacion(periodo=30, q="", categoria_id=None, solo_reponer=False, orden="mayor"):
+def obtener_rotacion(periodo=30, q="", categoria_id=None, solo_reponer=False, orden="mayor",
+                     sucursal_id=None):
     """Devuelve el reporte filtrado y ordenado listo para la vista o el CSV."""
     if orden not in ORDENES:
         orden = "mayor"
 
-    resultado = calcular_rotacion(periodo)
+    resultado = calcular_rotacion(periodo, sucursal_id=sucursal_id)
     filas = resultado["filas"]
 
     if q:

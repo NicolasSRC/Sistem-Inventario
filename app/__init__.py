@@ -24,9 +24,21 @@ def create_app(test_config=None):
     login_manager.login_message = "Inicie sesión para continuar."
     login_manager.login_message_category = "warning"
 
-    from .routes import auth, productos, categorias, movimientos, dashboard, reportes, proveedores, lotes
-    for m in (auth, productos, categorias, movimientos, dashboard, reportes, proveedores, lotes):
+    from .routes import auth, productos, categorias, movimientos, dashboard, reportes, proveedores, lotes, sucursales
+    for m in (auth, productos, categorias, movimientos, dashboard, reportes, proveedores, lotes, sucursales):
         app.register_blueprint(m.bp)
+
+    @app.context_processor
+    def contexto_sucursal():
+        from flask_login import current_user
+        from .services.sucursales import sucursal_actual, sucursales_activas
+
+        if not current_user.is_authenticated:
+            return {"sucursal_actual": None, "sucursales": []}
+        return {
+            "sucursal_actual": sucursal_actual(),
+            "sucursales": sucursales_activas() if current_user.es_admin else [],
+        }
 
     # Registra todos los modelos en los metadatos de SQLAlchemy/Alembic.
     from . import models  # noqa: F401

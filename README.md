@@ -1,6 +1,6 @@
 # 📦 Sistema de Gestión de Inventarios
 
-Aplicación web para registrar productos, controlar entradas, salidas y ventas, gestionar lotes y vencimientos, registrar mermas y ajustes, recibir alertas de stock bajo, consultar un dashboard con gráficos y exportar reportes en CSV.
+Aplicación web para registrar productos, controlar entradas, salidas y ventas, gestionar lotes y vencimientos, registrar mermas y ajustes, recibir alertas de stock bajo, consultar un dashboard con gráficos, operar varias sucursales de forma independiente y exportar reportes en CSV.
 
 **Stack:** Python 3.11 · Flask · SQLite · Flask-SQLAlchemy · Flask-Login · Flask-Migrate · Bootstrap 5 · Chart.js · Gunicorn
 
@@ -23,8 +23,8 @@ Aplicación web para registrar productos, controlar entradas, salidas y ventas, 
 
 ## Estado del proyecto
 
-- **Implementado:** autenticación y roles, productos, categorías, proveedores, inventario, ventas, lotes y vencimientos, mermas y ajustes, alertas, historial, reportes CSV, rotación con sugerencia de pedidos y dashboard con gráficos.
-- **Pendiente:** operación multi-sede, respaldos, seguridad y despliegue, y cierre de pruebas no funcionales.
+- **Implementado:** autenticación y roles, productos, categorías, proveedores, inventario, ventas, lotes y vencimientos, mermas y ajustes, alertas, historial, reportes CSV, rotación con sugerencia de pedidos, dashboard con gráficos y operación multi-sede con aislamiento por sucursal.
+- **Pendiente:** respaldos, seguridad y despliegue, y cierre de pruebas no funcionales.
 
 El alcance funcional se detalla en la sección [Funcionalidades](#4-funcionalidades).
 
@@ -73,10 +73,10 @@ Notas:
 ### Cargar datos de ejemplo (opcional)
 Con el entorno virtual activo:
 ```bash
-python seed_datos.py            # aplica migraciones y agrega categorías, 5 proveedores, 25 productos, 31 lotes y ~60 días de movimientos
+python seed_datos.py            # aplica migraciones y agrega categorías, 5 proveedores, 2 sucursales, 30 productos, 39 lotes y ~350 movimientos
 python seed_datos.py --reset    # BORRA la BD, aplica migraciones y vuelve a cargar los datos
 ```
-Los datos incluyen productos con stock bajo y agotados para probar las alertas, lotes vencidos y por vencer, y un historial coherente con el stock actual. También se generan mermas y ajustes de demostración.
+Los datos incluyen productos con stock bajo y agotados para probar las alertas, lotes vencidos y por vencer, un historial coherente con el stock actual y una segunda sede (“Sucursal Norte”) con catálogo y movimientos propios. También se generan mermas y ajustes de demostración.
 
 ### Migraciones y pruebas
 ```bash
@@ -84,14 +84,15 @@ flask --app run.py db migrate -m "descripcion del cambio"
 flask --app run.py db upgrade
 python -m pytest -q
 ```
-La suite actual contiene **54 pruebas** que cubren autenticación, productos, proveedores, inventario, lotes, mermas, dashboard, venta rápida y rotación de inventario.
+La suite actual contiene **65 pruebas** que cubren autenticación, productos, proveedores, inventario, lotes, mermas, dashboard, venta rápida, rotación y aislamiento multi-sede.
 
 ## 3. Usuarios y permisos
 
-| Usuario | Contraseña | Rol |
-|---|---|---|
-| `admin` | `admin123` | Tendero (administrador) |
-| `cliente` | `cliente123` | Cajero |
+| Usuario | Contraseña | Rol | Sucursal |
+|---|---|---|---|
+| `admin` | `admin123` | Tendero (administrador) | Principal |
+| `cliente` | `cliente123` | Cajero | Principal |
+| `norte` | `norte123` | Cajero | Sucursal Norte |
 
 ⚠️ Cambie estas contraseñas antes de usar el sistema con datos reales.
 
@@ -109,6 +110,9 @@ La suite actual contiene **54 pruebas** que cubren autenticación, productos, pr
 | Ver alertas de stock bajo | ✅ | ❌ |
 | Consultar rotación y sugerencia de pedidos | ✅ | ❌ |
 | Exportar reportes CSV | ✅ | ❌ |
+| Cambiar de sucursal activa | ✅ | ❌ (opera en la sede asignada) |
+
+El tendero puede alternar la sucursal activa desde el menú lateral. Todas las consultas, reportes, alertas, movimientos y el dashboard se filtran por esa sede; el cajero siempre opera sobre la sucursal asignada a su usuario.
 
 ## 4. Funcionalidades
 
@@ -127,7 +131,7 @@ La suite actual contiene **54 pruebas** que cubren autenticación, productos, pr
 | Alertas | Productos con cantidad ≤ stock mínimo y lotes vencidos o por vencer | RF-06 | ✅ |
 | Reportes | Exportación de productos, movimientos, lotes y mermas a CSV (compatible con Excel) | RF-09 | ✅ |
 | Rotación y reposición | Mayor y menor rotación, días de inventario y pedido sugerido según ventas, tiempo de entrega y stock mínimo, con vista en pantalla y CSV | RF-14 | ✅ |
-| Multi-sede | Stock y movimientos independientes por sucursal, con selector de sede | RNF-06 | ⏳ |
+| Multi-sede | Stock, lotes y movimientos independientes por sucursal; el tendero cambia la sede activa desde el menú y el cajero queda fijo a la suya | RNF-06 | ✅ |
 | Respaldos y despliegue | Copias de seguridad, `SECRET_KEY` externa y publicación web | RNF-04, RNF-05 | ⏳ |
 | Pruebas no funcionales | Rendimiento, usabilidad y verificación responsiva final | RNF-01, RNF-02, RNF-03 | ⏳ |
 
@@ -148,6 +152,10 @@ Reglas de negocio del inventario:
 - La **rotación** se calcula con las salidas reales de 7, 30 o 90 días y se clasifica por el promedio vendido por día: alta (≥ 1), media (≥ 0.2), baja (> 0) y sin rotación (0).
 - El **pedido sugerido** cubre el consumo durante el tiempo de entrega del proveedor más 7 días de stock de seguridad, sin bajar del stock mínimo del producto.
 - Los ingresos del dashboard son estimados con el precio de venta actual del producto.
+- Cada producto, lote y movimiento pertenece a una **sucursal**. El stock se controla por producto dentro de su sede.
+- El tendero elige la sucursal activa en el menú lateral; el cajero siempre opera en la sucursal de su usuario.
+- Un producto de otra sede no se puede editar, vender, ajustar ni registrar en movimientos (responde 404 o rechaza la operación).
+- Los SKU y códigos de barras siguen siendo únicos a nivel global, aunque el producto pertenezca a una sede distinta.
 - Los productos no se eliminan: se **desactivan** para conservar su historial y se pueden reactivar.
 
 ## 5. Estructura del proyecto
@@ -158,8 +166,8 @@ sistema_inventario/
 │   ├── cli.py             # Comandos init-db y seed-base
 │   ├── models.py          # Usuario, Sucursal, Proveedor, Categoria, Producto, Lote, Movimiento
 │   ├── utils.py           # Decorador admin_required
-│   ├── services/          # Lógica de inventario y cálculo de rotación/reposición
-│   ├── routes/            # auth, productos, categorias, proveedores, lotes, movimientos, dashboard, reportes
+│   ├── services/          # Lógica de inventario, rotación y resolución de sucursal activa
+│   ├── routes/            # auth, productos, categorias, proveedores, lotes, movimientos, dashboard, reportes, sucursales
 │   ├── templates/         # Plantillas Jinja2 (Bootstrap 5)
 │   └── static/            # css/ y js/
 ├── migrations/            # Migraciones Alembic/Flask-Migrate

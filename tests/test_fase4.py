@@ -8,7 +8,8 @@ from app.services.inventario import InventarioError, registrar_entrada, registra
 
 
 def _producto(**cambios):
-    datos = dict(nombre="Producto con lote", precio=2000, precio_compra=1000, cantidad=0)
+    datos = dict(nombre="Producto con lote", precio=2000, precio_compra=1000, cantidad=0,
+                 sucursal_id=1)  # Principal
     datos.update(cambios)
     return Producto(**datos)
 
@@ -94,7 +95,7 @@ def test_salida_fefo_consume_primero_el_vencimiento_mas_cercano(app):
 def test_salida_consume_lotes_y_descuenta_resto_agregado(app):
     with app.app_context():
         producto = _producto(cantidad=10)
-        lote = Lote(producto=producto, codigo="L-001", fecha_vencimiento=_fecha(10),
+        lote = Lote(producto=producto, sucursal_id=1, codigo="L-001", fecha_vencimiento=_fecha(10),
                     cantidad_inicial=3, cantidad_actual=3, costo_unitario=1000)
         db.session.add_all([producto, lote])
         db.session.commit()
@@ -200,11 +201,11 @@ def test_lista_lotes_filtra_por_estado(app, admin_client):
         db.session.add(producto)
         db.session.flush()
         db.session.add_all([
-            Lote(producto=producto, codigo="VENCIDO", fecha_vencimiento=_fecha(-2),
+            Lote(producto=producto, sucursal_id=1, codigo="VENCIDO", fecha_vencimiento=_fecha(-2),
                  cantidad_inicial=5, cantidad_actual=5, costo_unitario=1000),
-            Lote(producto=producto, codigo="PROXIMO", fecha_vencimiento=_fecha(5),
+            Lote(producto=producto, sucursal_id=1, codigo="PROXIMO", fecha_vencimiento=_fecha(5),
                  cantidad_inicial=5, cantidad_actual=5, costo_unitario=1000),
-            Lote(producto=producto, codigo="VIGENTE", fecha_vencimiento=_fecha(90),
+            Lote(producto=producto, sucursal_id=1, codigo="VIGENTE", fecha_vencimiento=_fecha(90),
                  cantidad_inicial=5, cantidad_actual=5, costo_unitario=1000),
         ])
         db.session.commit()

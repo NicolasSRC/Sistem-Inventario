@@ -8,7 +8,8 @@ from app.services.inventario import InventarioError, registrar_ajuste
 
 
 def _producto(**cambios):
-    datos = dict(nombre="Producto ajuste", precio=2000, precio_compra=1000, cantidad=10)
+    datos = dict(nombre="Producto ajuste", precio=2000, precio_compra=1000, cantidad=10,
+                 sucursal_id=1)  # Principal
     datos.update(cambios)
     return Producto(**datos)
 
@@ -80,9 +81,9 @@ def test_merma_consume_lotes_fefo(app):
         producto = _producto(cantidad=10)
         db.session.add(producto)
         db.session.flush()
-        cercano = Lote(producto=producto, codigo="L-CERCA", fecha_vencimiento=date.today() + timedelta(days=4),
+        cercano = Lote(producto=producto, sucursal_id=1, codigo="L-CERCA", fecha_vencimiento=date.today() + timedelta(days=4),
                        cantidad_inicial=4, cantidad_actual=4, costo_unitario=1000)
-        lejano = Lote(producto=producto, codigo="L-LEJOS", fecha_vencimiento=date.today() + timedelta(days=60),
+        lejano = Lote(producto=producto, sucursal_id=1, codigo="L-LEJOS", fecha_vencimiento=date.today() + timedelta(days=60),
                       cantidad_inicial=3, cantidad_actual=3, costo_unitario=1000)
         db.session.add_all([cercano, lejano])
         db.session.commit()
@@ -103,7 +104,7 @@ def test_ajuste_negativo_consume_lotes(app):
         producto = _producto(cantidad=8)
         db.session.add(producto)
         db.session.flush()
-        lote = Lote(producto=producto, codigo="L-001", fecha_vencimiento=date.today() + timedelta(days=10),
+        lote = Lote(producto=producto, sucursal_id=1, codigo="L-001", fecha_vencimiento=date.today() + timedelta(days=10),
                     cantidad_inicial=3, cantidad_actual=3, costo_unitario=1000)
         db.session.add(lote)
         db.session.commit()

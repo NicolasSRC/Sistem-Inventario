@@ -60,6 +60,7 @@ def _resolver_lote(producto, cantidad, costo_unitario, lote, lote_codigo, fecha_
 
     return Lote(
         producto=producto,
+        sucursal_id=producto.sucursal_id,
         codigo=codigo,
         fecha_vencimiento=fecha,
         cantidad_inicial=cantidad,
@@ -74,6 +75,7 @@ def _movimiento(producto, tipo, motivo, cantidad, delta, costo, stock_anterior,
         producto=producto,
         usuario_id=usuario.id if usuario else None,
         lote=lote,
+        sucursal_id=producto.sucursal_id,
         tipo=tipo,
         motivo=motivo,
         cantidad=cantidad,

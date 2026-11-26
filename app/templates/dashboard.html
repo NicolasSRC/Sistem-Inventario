@@ -4,7 +4,7 @@
 <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
  <div>
   <h3 class="page-title">Dashboard</h3>
-  <p class="page-sub mb-0">Resumen general del inventario</p>
+  <p class="page-sub mb-0">Resumen general del inventario{% if sucursal_actual %} · {{ sucursal_actual.nombre }}{% endif %}</p>
  </div>
  <div class="d-flex flex-wrap align-items-center gap-2">
   <div class="btn-group" role="group" aria-label="Período del dashboard">

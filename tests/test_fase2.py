@@ -124,6 +124,7 @@ def test_reporte_productos_incluye_proveedor(admin_client):
         precio_compra=7000,
         cantidad=3,
         proveedor=proveedor,
+        sucursal_id=1,  # Principal
     )
     db.session.add(producto)
     db.session.commit()

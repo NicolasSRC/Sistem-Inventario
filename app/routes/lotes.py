@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, request
 
 from ..models import Lote, Producto
+from ..services.sucursales import filtrar
 from ..utils import admin_required
 
 bp = Blueprint("lotes", __name__, url_prefix="/lotes")
@@ -19,7 +20,7 @@ def _clasificar(lote):
 
 
 def _lotes_activos():
-    return (Lote.query.join(Producto)
+    return (filtrar(Lote.query, Lote).join(Producto)
             .filter(Producto.activo.is_(True), Lote.cantidad_actual > 0)
             .order_by(Lote.fecha_vencimiento.is_(None), Lote.fecha_vencimiento, Lote.id)
             .all())

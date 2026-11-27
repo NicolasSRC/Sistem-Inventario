@@ -277,7 +277,53 @@ El entorno virtual debe estar activo para que `pip` instale en el lugar correcto
 
 Después pulse **Reload** en la pestaña **Web**. Los datos de SQLite se conservan.
 
-### 7.3 Seguridad después de publicar
+### 7.3 Actualizar los datos de la instancia publicada
+
+`flask --app run.py db upgrade` actualiza la estructura de la base, pero **no agrega datos de demostración ni sucursales nuevas**. Antes de cambiar datos, haga un respaldo:
+
+```bash
+cd ~/Sistem-Inventario
+cp instance/inventario.db ~/inventario-respaldo-$(date +%F-%H%M).db
+```
+
+**Opción A — Cargar los datos de demostración pendientes (sin borrar nada):**
+
+```bash
+python seed_datos.py
+```
+
+El script es idempotente: crea la “Sucursal Norte”, sus productos `NOR-*`, el usuario `norte/norte123` y cualquier categoría, proveedor o producto que falte. **No use `python seed_datos.py --reset` en una instancia publicada**, porque borra `instance/inventario.db` antes de volver a poblarla.
+
+**Opción B — Datos reales desde la aplicación (recomendado):**
+
+1. Ingrese como `admin`.
+2. Abra **Panel administrativo** en el menú lateral.
+3. Registre los usuarios y las sucursales que necesite.
+4. Registre productos, entradas y movimientos desde sus módulos habituales.
+
+**Opción C — Datos puntuales desde la consola:**
+
+```bash
+flask --app run.py shell
+```
+
+```python
+from app import db
+from app.models import Sucursal, Usuario
+
+sucursal = Sucursal(nombre="Sucursal Centro", direccion="Calle 10 #20-30", telefono="3001234567")
+db.session.add(sucursal)
+db.session.flush()
+
+usuario = Usuario(username="centro", rol="cajero", sucursal=sucursal)
+usuario.set_password("una-clave-segura")
+db.session.add(usuario)
+db.session.commit()
+```
+
+Al terminar, pulse **Reload** en la pestaña **Web**.
+
+### 7.4 Seguridad después de publicar
 
 El seed crea las cuentas de demostración. Cámbielas antes de compartir la URL:
 
@@ -294,7 +340,7 @@ admin.set_password("NUEVA_CLAVE_SEGURA")
 db.session.commit()
 ```
 
-### 7.4 Otras plataformas
+### 7.5 Otras plataformas
 
 El proyecto incluye `wsgi.py`, por lo que también puede ejecutarse con:
 

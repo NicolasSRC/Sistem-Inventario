@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Sucursales{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-4">
+ <div>
+  <h3 class="page-title">Sucursales</h3>
+  <p class="page-sub mb-0">Sedes disponibles para operar el inventario</p>
+ </div>
+ <div class="d-flex flex-wrap gap-2">
+  <a href="{{ url_for('admin.panel') }}" class="btn btn-outline-secondary">
+   <i class="bi bi-arrow-left me-1"></i>Panel
+  </a>
+  <a href="{{ url_for('admin.sucursal_nueva') }}" class="btn btn-primary">
+   <i class="bi bi-building-add me-1"></i>Nueva sucursal
+  </a>
+ </div>
+</div>
+
+<div class="table-responsive card shadow-sm">
+ <table class="table align-middle mb-0">
+  <thead><tr><th>Sucursal</th><th>Contacto</th><th>Usuarios</th><th>Productos</th><th>Estado</th><th></th></tr></thead>
+  <tbody>
+  {% for s in sucursales %}
+   <tr>
+    <td>
+     <div class="fw-semibold">{{ s.nombre }}</div>
+     <div class="small text-muted">{{ s.direccion or 'Sin dirección registrada' }}</div>
+    </td>
+    <td>{{ s.telefono or '—' }}</td>
+    <td>{{ s.usuarios|length }}</td>
+    <td>{{ s.productos|length }}</td>
+    <td>
+     {% if s.activa %}
+     <span class="badge text-bg-success">Activa</span>
+     {% else %}
+     <span class="badge text-bg-secondary">Inactiva</span>
+     {% endif %}
+    </td>
+    <td class="text-end text-nowrap">
+     <a href="{{ url_for('admin.sucursal_editar', id=s.id) }}" class="btn btn-sm btn-outline-secondary">
+      <i class="bi bi-pencil me-1"></i>Editar
+     </a>
+     <form method="post" action="{{ url_for('admin.sucursal_estado', id=s.id) }}" class="d-inline"
+           data-confirm="{{ '¿Desactivar la sucursal? No aparecerá en el selector de sedes.' if s.activa else '¿Activar nuevamente la sucursal?' }}">
+      {% if s.activa %}
+      <button class="btn btn-sm btn-outline-danger"><i class="bi bi-pause-circle me-1"></i>Desactivar</button>
+      {% else %}
+      <button class="btn btn-sm btn-outline-success"><i class="bi bi-play-circle me-1"></i>Activar</button>
+      {% endif %}
+     </form>
+    </td>
+   </tr>
+  {% else %}
+   <tr><td colspan="6" class="text-center text-muted py-4">Sin sucursales registradas.</td></tr>
+  {% endfor %}
+  </tbody>
+ </table>
+</div>
+
+<div class="form-note mt-3">
+ <i class="bi bi-info-circle"></i>
+ <span>Una sucursal con productos o usuarios asignados no se puede desactivar. Así se evita dejar inventario o cuentas sin sede.</span>
+</div>
+{% endblock %}

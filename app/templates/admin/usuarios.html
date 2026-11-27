@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Usuarios{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-4">
+ <div>
+  <h3 class="page-title">Usuarios</h3>
+  <p class="page-sub mb-0">Cuentas de acceso, roles y sucursal asignada</p>
+ </div>
+ <div class="d-flex flex-wrap gap-2">
+  <a href="{{ url_for('admin.panel') }}" class="btn btn-outline-secondary">
+   <i class="bi bi-arrow-left me-1"></i>Panel
+  </a>
+  <a href="{{ url_for('admin.usuario_nuevo') }}" class="btn btn-primary">
+   <i class="bi bi-person-plus me-1"></i>Registrar usuario
+  </a>
+ </div>
+</div>
+
+<div class="table-responsive card shadow-sm">
+ <table class="table align-middle mb-0">
+  <thead><tr><th>Usuario</th><th>Rol</th><th>Sucursal</th><th></th></tr></thead>
+  <tbody>
+  {% for u in usuarios %}
+   <tr>
+    <td>
+     <div class="fw-semibold">{{ u.username }}{% if u.id == current_user.id %} <span class="badge text-bg-light border ms-1">Usted</span>{% endif %}</div>
+    </td>
+    <td>
+     {% if u.es_admin %}
+     <span class="badge text-bg-primary">Tendero</span>
+     {% else %}
+     <span class="badge text-bg-secondary">Cajero</span>
+     {% endif %}
+    </td>
+    <td>{{ u.sucursal.nombre if u.sucursal else 'Sin sucursal' }}</td>
+    <td class="text-end">
+     <a href="{{ url_for('admin.usuario_editar', id=u.id) }}" class="btn btn-sm btn-outline-secondary">
+      <i class="bi bi-pencil me-1"></i>Editar
+     </a>
+    </td>
+   </tr>
+  {% else %}
+   <tr><td colspan="4" class="text-center text-muted py-4">Sin usuarios registrados.</td></tr>
+  {% endfor %}
+  </tbody>
+ </table>
+</div>
+{% endblock %}

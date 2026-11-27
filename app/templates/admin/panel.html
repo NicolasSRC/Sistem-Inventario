@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block title %}Panel administrativo{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-4">
+ <div>
+  <h3 class="page-title">Panel administrativo</h3>
+  <p class="page-sub mb-0">Gestione usuarios, sucursales y la configuración general del sistema</p>
+ </div>
+ <div class="d-flex flex-wrap gap-2">
+  <a href="{{ url_for('admin.usuario_nuevo') }}" class="btn btn-primary">
+   <i class="bi bi-person-plus me-1"></i>Registrar usuario
+  </a>
+  <a href="{{ url_for('admin.sucursal_nueva') }}" class="btn btn-outline-primary">
+   <i class="bi bi-building-add me-1"></i>Nueva sucursal
+  </a>
+ </div>
+</div>
+
+<div class="row g-3 mb-4">
+ <div class="col-sm-6 col-xl-3">
+  <div class="card shadow-sm h-100"><div class="card-body kpi">
+   <div class="kpi-icon k-primary"><i class="bi bi-people"></i></div>
+   <div><div class="kpi-value">{{ totales.usuarios }}</div><div class="kpi-label">Usuarios registrados</div></div>
+  </div></div>
+ </div>
+ <div class="col-sm-6 col-xl-3">
+  <div class="card shadow-sm h-100"><div class="card-body kpi">
+   <div class="kpi-icon k-info"><i class="bi bi-building"></i></div>
+   <div><div class="kpi-value">{{ totales.activas }} / {{ totales.sucursales }}</div><div class="kpi-label">Sucursales activas</div></div>
+  </div></div>
+ </div>
+ <div class="col-sm-6 col-xl-3">
+  <div class="card shadow-sm h-100"><div class="card-body kpi">
+   <div class="kpi-icon k-success"><i class="bi bi-boxes"></i></div>
+   <div><div class="kpi-value">{{ totales.productos }}</div><div class="kpi-label">Productos activos</div></div>
+  </div></div>
+ </div>
+ <div class="col-sm-6 col-xl-3">
+  <div class="card shadow-sm h-100"><div class="card-body kpi">
+   <div class="kpi-icon k-secondary"><i class="bi bi-clock-history"></i></div>
+   <div><div class="kpi-value">{{ totales.movimientos }}</div><div class="kpi-label">Movimientos registrados</div></div>
+  </div></div>
+ </div>
+</div>
+
+<div class="row g-3">
+ <div class="col-lg-8">
+  <div class="card shadow-sm h-100">
+   <div class="card-header d-flex align-items-center justify-content-between">
+    <span><i class="bi bi-building me-2"></i>Sucursales</span>
+    <a href="{{ url_for('admin.sucursales') }}" class="btn btn-sm btn-outline-primary">Administrar</a>
+   </div>
+   <div class="table-responsive">
+    <table class="table align-middle mb-0">
+     <thead><tr><th>Sucursal</th><th>Usuarios</th><th>Productos</th><th>Estado</th></tr></thead>
+     <tbody>
+     {% for fila in resumen %}
+      <tr>
+       <td>
+        <div class="fw-semibold">{{ fila.sucursal.nombre }}</div>
+        <div class="small text-muted">{{ fila.sucursal.direccion or 'Sin dirección registrada' }}</div>
+       </td>
+       <td>{{ fila.usuarios }}</td>
+       <td>{{ fila.productos }}</td>
+       <td>
+        {% if fila.sucursal.activa %}
+        <span class="badge text-bg-success">Activa</span>
+        {% else %}
+        <span class="badge text-bg-secondary">Inactiva</span>
+        {% endif %}
+       </td>
+      </tr>
+     {% else %}
+      <tr><td colspan="4" class="text-center text-muted py-4">Sin sucursales registradas.</td></tr>
+     {% endfor %}
+     </tbody>
+    </table>
+   </div>
+  </div>
+ </div>
+ <div class="col-lg-4">
+  <div class="card shadow-sm h-100">
+   <div class="card-header"><i class="bi bi-lightning-charge me-2"></i>Accesos rápidos</div>
+   <div class="list-group list-group-flush">
+    <a class="list-group-item list-group-item-action d-flex align-items-center gap-2" href="{{ url_for('admin.usuarios') }}">
+     <i class="bi bi-people text-primary"></i>Gestionar usuarios
+    </a>
+    <a class="list-group-item list-group-item-action d-flex align-items-center gap-2" href="{{ url_for('admin.sucursales') }}">
+     <i class="bi bi-building text-primary"></i>Gestionar sucursales
+    </a>
+    <a class="list-group-item list-group-item-action d-flex align-items-center gap-2" href="{{ url_for('dashboard.index') }}">
+     <i class="bi bi-speedometer2 text-primary"></i>Ir al dashboard
+    </a>
+    <a class="list-group-item list-group-item-action d-flex align-items-center gap-2" href="{{ url_for('reportes.index') }}">
+     <i class="bi bi-file-earmark-spreadsheet text-primary"></i>Reportes y exportaciones
+    </a>
+   </div>
+   <div class="card-body">
+    <div class="form-note">
+     <i class="bi bi-info-circle"></i>
+     <span>Los usuarios conservan su historial: se editan o cambian de rol, no se eliminan. Una sucursal con productos o usuarios asignados no se puede desactivar.</span>
+    </div>
+   </div>
+  </div>
+ </div>
+</div>
+{% endblock %}

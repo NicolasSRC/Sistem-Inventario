@@ -24,8 +24,8 @@ def create_app(test_config=None):
     login_manager.login_message = "Inicie sesión para continuar."
     login_manager.login_message_category = "warning"
 
-    from .routes import auth, productos, categorias, movimientos, dashboard, reportes, proveedores, lotes, sucursales
-    for m in (auth, productos, categorias, movimientos, dashboard, reportes, proveedores, lotes, sucursales):
+    from .routes import auth, productos, categorias, movimientos, dashboard, reportes, proveedores, lotes, sucursales, admin
+    for m in (auth, productos, categorias, movimientos, dashboard, reportes, proveedores, lotes, sucursales, admin):
         app.register_blueprint(m.bp)
 
     @app.context_processor

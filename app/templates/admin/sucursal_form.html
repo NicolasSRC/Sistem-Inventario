@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% set editando = sucursal is not none %}
+{% block title %}{{ 'Editar' if editando else 'Nueva' }} sucursal{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-4">
+ <div>
+  <h3 class="page-title">{{ 'Editar' if editando else 'Nueva' }} sucursal</h3>
+  <p class="page-sub mb-0">Datos de la sede que se usará para separar el inventario</p>
+ </div>
+ <a href="{{ url_for('admin.sucursales') }}" class="btn btn-outline-secondary">
+  <i class="bi bi-arrow-left me-1"></i>Volver a sucursales
+ </a>
+</div>
+
+<form method="post" class="form-card" style="max-width:760px">
+ <div class="form-card-body">
+  <section class="form-section">
+   <div class="form-section-title"><i class="bi bi-building"></i>Datos de la sucursal</div>
+   <div class="row g-3">
+    <div class="col-md-7">
+     <label class="form-label">Nombre <span class="text-danger">*</span></label>
+     <input name="nombre" class="form-control" maxlength="80" required
+            placeholder="Ej. Sucursal Centro, Bodega Sur…" value="{{ valores.nombre }}">
+    </div>
+    <div class="col-md-5">
+     <label class="form-label">Teléfono</label>
+     <div class="input-group">
+      <span class="input-group-text"><i class="bi bi-telephone"></i></span>
+      <input name="telefono" class="form-control" maxlength="30" placeholder="Fijo o celular" value="{{ valores.telefono }}">
+     </div>
+    </div>
+    <div class="col-12">
+     <label class="form-label">Dirección</label>
+     <div class="input-group">
+      <span class="input-group-text"><i class="bi bi-geo-alt"></i></span>
+      <input name="direccion" class="form-control" maxlength="200" placeholder="Dirección de la sede" value="{{ valores.direccion }}">
+     </div>
+    </div>
+   </div>
+  </section>
+
+  <div class="form-note mb-0">
+   <i class="bi bi-info-circle"></i>
+   <span>Al crearla quedará activa y disponible en el selector de sucursal del tendero. Los productos, lotes y movimientos nuevos se registrarán en la sede activa.</span>
+  </div>
+
+  <div class="form-actions">
+   <button class="btn btn-primary px-4"><i class="bi bi-check2 me-1"></i>
+    {{ 'Guardar cambios' if editando else 'Crear sucursal' }}
+   </button>
+   <a class="btn btn-link text-secondary" href="{{ url_for('admin.sucursales') }}">Cancelar</a>
+  </div>
+ </div>
+</form>
+{% endblock %}

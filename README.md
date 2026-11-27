@@ -23,7 +23,7 @@ Aplicación web para registrar productos, controlar entradas, salidas y ventas, 
 
 ## Estado del proyecto
 
-- **Implementado:** autenticación y roles, productos, categorías, proveedores, inventario, ventas, lotes y vencimientos, mermas y ajustes, alertas, historial, reportes CSV, rotación con sugerencia de pedidos, dashboard con gráficos y operación multi-sede con aislamiento por sucursal.
+- **Implementado:** autenticación y roles, productos, categorías, proveedores, inventario, ventas, lotes y vencimientos, mermas y ajustes, alertas, historial, reportes CSV, rotación con sugerencia de pedidos, dashboard con gráficos, operación multi-sede con aislamiento por sucursal y panel administrativo para usuarios y sucursales.
 - **Pendiente:** respaldos, seguridad y despliegue, y cierre de pruebas no funcionales.
 
 El alcance funcional se detalla en la sección [Funcionalidades](#4-funcionalidades).
@@ -84,7 +84,7 @@ flask --app run.py db migrate -m "descripcion del cambio"
 flask --app run.py db upgrade
 python -m pytest -q
 ```
-La suite actual contiene **65 pruebas** que cubren autenticación, productos, proveedores, inventario, lotes, mermas, dashboard, venta rápida, rotación y aislamiento multi-sede.
+La suite actual contiene **77 pruebas** que cubren autenticación, productos, proveedores, inventario, lotes, mermas, dashboard, venta rápida, rotación, aislamiento multi-sede y panel administrativo.
 
 ## 3. Usuarios y permisos
 
@@ -93,6 +93,8 @@ La suite actual contiene **65 pruebas** que cubren autenticación, productos, pr
 | `admin` | `admin123` | Tendero (administrador) | Principal |
 | `cliente` | `cliente123` | Cajero | Principal |
 | `norte` | `norte123` | Cajero | Sucursal Norte |
+
+El login muestra estas cuentas de demostración con su rol y sucursal. Desde **Panel administrativo** el tendero puede registrar nuevas cuentas, asignarles rol y sede, y crear o administrar sucursales.
 
 ⚠️ Cambie estas contraseñas antes de usar el sistema con datos reales.
 
@@ -111,6 +113,7 @@ La suite actual contiene **65 pruebas** que cubren autenticación, productos, pr
 | Consultar rotación y sugerencia de pedidos | ✅ | ❌ |
 | Exportar reportes CSV | ✅ | ❌ |
 | Cambiar de sucursal activa | ✅ | ❌ (opera en la sede asignada) |
+| Gestionar usuarios y sucursales | ✅ | ❌ |
 
 El tendero puede alternar la sucursal activa desde el menú lateral. Todas las consultas, reportes, alertas, movimientos y el dashboard se filtran por esa sede; el cajero siempre opera sobre la sucursal asignada a su usuario.
 
@@ -132,6 +135,7 @@ El tendero puede alternar la sucursal activa desde el menú lateral. Todas las c
 | Reportes | Exportación de productos, movimientos, lotes y mermas a CSV (compatible con Excel) | RF-09 | ✅ |
 | Rotación y reposición | Mayor y menor rotación, días de inventario y pedido sugerido según ventas, tiempo de entrega y stock mínimo, con vista en pantalla y CSV | RF-14 | ✅ |
 | Multi-sede | Stock, lotes y movimientos independientes por sucursal; el tendero cambia la sede activa desde el menú y el cajero queda fijo a la suya | RNF-06 | ✅ |
+| Panel administrativo | Registro y edición de usuarios (rol, sede y contraseña), alta y edición de sucursales, activación/desactivación segura y resumen general | RF-01, RF-02, RNF-06 | ✅ |
 | Respaldos y despliegue | Copias de seguridad, `SECRET_KEY` externa y publicación web | RNF-04, RNF-05 | ⏳ |
 | Pruebas no funcionales | Rendimiento, usabilidad y verificación responsiva final | RNF-01, RNF-02, RNF-03 | ⏳ |
 
@@ -156,6 +160,8 @@ Reglas de negocio del inventario:
 - El tendero elige la sucursal activa en el menú lateral; el cajero siempre opera en la sucursal de su usuario.
 - Un producto de otra sede no se puede editar, vender, ajustar ni registrar en movimientos (responde 404 o rechaza la operación).
 - Los SKU y códigos de barras siguen siendo únicos a nivel global, aunque el producto pertenezca a una sede distinta.
+- Los usuarios no se eliminan: se editan para conservar la trazabilidad de sus movimientos. El tendero no puede quitarse a sí mismo el rol de administrador.
+- Una sucursal con productos o usuarios asignados no se puede desactivar; solo las sucursales activas aparecen en el selector de sede.
 - Los productos no se eliminan: se **desactivan** para conservar su historial y se pueden reactivar.
 
 ## 5. Estructura del proyecto
@@ -167,8 +173,8 @@ sistema_inventario/
 │   ├── models.py          # Usuario, Sucursal, Proveedor, Categoria, Producto, Lote, Movimiento
 │   ├── utils.py           # Decorador admin_required
 │   ├── services/          # Lógica de inventario, rotación y resolución de sucursal activa
-│   ├── routes/            # auth, productos, categorias, proveedores, lotes, movimientos, dashboard, reportes, sucursales
-│   ├── templates/         # Plantillas Jinja2 (Bootstrap 5)
+│   ├── routes/            # auth, productos, categorias, proveedores, lotes, movimientos, dashboard, reportes, sucursales, admin
+│   ├── templates/         # Plantillas Jinja2 (Bootstrap 5), incluye admin/
 │   └── static/            # css/ y js/
 ├── migrations/            # Migraciones Alembic/Flask-Migrate
 ├── tests/                 # Pruebas con pytest

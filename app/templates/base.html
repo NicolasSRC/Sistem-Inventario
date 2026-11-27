@@ -39,6 +39,7 @@
    <a href="{{ url_for('movimientos.historial') }}" class="{{ 'active' if ep=='movimientos.historial' }}"><i class="bi bi-clock-history"></i>Historial</a>
    {% if current_user.es_admin %}
    <div class="nav-label">Administración</div>
+   <a href="{{ url_for('admin.panel') }}" class="{{ 'active' if ep.startswith('admin.') }}"><i class="bi bi-shield-lock"></i>Panel administrativo</a>
    <a href="{{ url_for('categorias.lista') }}" class="{{ 'active' if ep.startswith('categorias.') }}"><i class="bi bi-tags"></i>Categorías</a>
    <a href="{{ url_for('proveedores.lista') }}" class="{{ 'active' if ep.startswith('proveedores.') }}"><i class="bi bi-truck"></i>Proveedores</a>
    <a href="{{ url_for('lotes.lista') }}" class="{{ 'active' if ep.startswith('lotes.') }}"><i class="bi bi-calendar-x"></i>Lotes y vencimientos</a>

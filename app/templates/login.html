@@ -14,13 +14,14 @@
  <div class="login-divider"><span>Cuentas de prueba</span></div>
  <div class="demo-users">
   {% for u in [
-   {'rol': 'Tendero', 'usuario': 'admin', 'clave': 'admin123', 'icono': 'bi-shield-lock'},
-   {'rol': 'Cajero', 'usuario': 'cliente', 'clave': 'cliente123', 'icono': 'bi-cart3'}
+   {'rol': 'Tendero', 'sucursal': 'Principal', 'usuario': 'admin', 'clave': 'admin123', 'icono': 'bi-shield-lock'},
+   {'rol': 'Cajero', 'sucursal': 'Principal', 'usuario': 'cliente', 'clave': 'cliente123', 'icono': 'bi-cart3'},
+   {'rol': 'Cajero', 'sucursal': 'Sucursal Norte', 'usuario': 'norte', 'clave': 'norte123', 'icono': 'bi-shop'}
   ] %}
-  <button type="button" class="demo-user" data-user="{{ u.usuario }}" data-pass="{{ u.clave }}" title="Entrar como {{ u.rol|lower }}">
+  <button type="button" class="demo-user" data-user="{{ u.usuario }}" data-pass="{{ u.clave }}" title="Entrar como {{ u.rol|lower }} de {{ u.sucursal }}">
    <span class="demo-icon"><i class="bi {{ u.icono }}"></i></span>
    <span class="demo-text">
-    <span class="demo-role">{{ u.rol }}</span>
+    <span class="demo-role">{{ u.rol }} · {{ u.sucursal }}</span>
     <span class="demo-cred">{{ u.usuario }} · {{ u.clave }}</span>
    </span>
    <span class="demo-go"><i class="bi bi-arrow-right-short"></i></span>

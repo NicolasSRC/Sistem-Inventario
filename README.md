@@ -261,10 +261,19 @@ Reemplace `USUARIO` por su nombre de usuario en todos los pasos.
 
 ```bash
 cd ~/Sistem-Inventario
+workon inventario          # activa el entorno virtual creado en el paso 7.1
 git pull
 pip install -r requirements.txt
 flask --app run.py db upgrade
 ```
+
+Si `workon` no está disponible, active el entorno con su ruta:
+
+```bash
+source ~/.virtualenvs/inventario/bin/activate
+```
+
+El entorno virtual debe estar activo para que `pip` instale en el lugar correcto y para que el comando `flask` exista. `git pull` no lo requiere, pero el resto de la actualización sí.
 
 Después pulse **Reload** en la pestaña **Web**. Los datos de SQLite se conservan.
 
